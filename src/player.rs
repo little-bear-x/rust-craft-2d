@@ -2,8 +2,9 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use super::basic::*;
+use super::game_map::*;
 
-const STARTING_PLAYER_POS: Vec2 = Vec2::new(0., 0.);
+const STARTING_PLAYER_POS: Vec2 = Vec2::new(0., 400.);
 
 
 #[derive(Bundle)]
@@ -43,6 +44,10 @@ fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>) {
             actual_jump_high: 100.,
             move_type: GameObjType::Player,
         })
+        .insert(PlayerMapInfo{
+            map_x_vector: vec![]
+        })
+        // 物理引擎
         .insert(RigidBody::Dynamic)  // 创建玩家刚体
         .insert(Velocity {  // 添加玩家速度
             linvel: Vec2::new(0.0, 0.0),

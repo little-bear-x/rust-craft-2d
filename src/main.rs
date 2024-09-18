@@ -3,8 +3,11 @@ use bevy_rapier2d::prelude::*;
 
 pub mod player;
 pub mod camera;
-pub mod basic;
 pub mod cube;
+
+// 通用组件
+pub mod basic;
+pub mod game_map;
 
 use player::PlayerPlugin;
 use camera::CameraPlugin;

@@ -33,5 +33,12 @@ pub struct Player;  // 标记为玩家
 #[derive(Component)]
 pub struct CameraCom;  // 标记为相机
 
-#[derive(Component)]
-pub struct Cube;  // 标记为方块
+#[derive(Component, Debug)]
+pub enum Cube {
+    GrassCube,
+}  // 标记为方块
+
+#[derive(Bundle)]
+pub struct CubeBundle {
+    pub cube_type: Cube,
+}

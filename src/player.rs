@@ -1,5 +1,6 @@
 // 玩家文件，用于处理玩家逻辑
 use bevy::prelude::*;
+use std::collections::HashMap;
 use bevy_rapier2d::prelude::*;
 use super::basic::*;
 use super::game_map::*;
@@ -45,7 +46,8 @@ fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>) {
             move_type: GameObjType::Player,
         })
         .insert(PlayerMapInfo{
-            map_x_vector: vec![]
+            map_x_vector: vec![],
+            map_hashmap: HashMap::new()
         })
         // 物理引擎
         .insert(RigidBody::Dynamic)  // 创建玩家刚体
@@ -65,13 +67,14 @@ fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>) {
 // 玩家移动\下蹲
 fn move_player(
     keys: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&mut Transform, &mut Sprite, &mut Movement, &mut Velocity), With<Player>>
+    mut query: Query<(&mut Transform, &mut Sprite, &mut Movement, &mut Velocity, &PlayerMapInfo), With<Player>>
 ) {
     for (
         mut transform, 
         mut sprite, 
         mut movement, 
-        mut velocities
+        mut velocities,
+        player_map
     ) in query.iter_mut() {
         // 检测移动
         if keys.pressed(KeyCode::KeyA) {  // 向右
@@ -81,8 +84,20 @@ fn move_player(
         }
         // 检测跳跃
         if keys.just_pressed(KeyCode::Space) {  // 跳跃
-            velocities.linvel = Vec2::new(0.0, 500.0);
-            velocities.angvel = 0.0;
+            if player_map.map_hashmap.contains_key(&(((transform.translation.x/100.0).round()) as i32)){
+                match player_map.map_hashmap.get(&(((transform.translation.x/100.0).round()) as i32)) {
+                    Some(s) => {
+                        if s.contains_key(&(((transform.translation.y/100.0).ceil()) as i32 - 1)) {
+                            velocities.linvel = Vec2::new(0.0, 500.0);
+                            velocities.angvel = 0.0;
+                        }
+                    }
+                    _  => {
+                        error!("出现错误\n由player.rs引起, 位于fn move_player -> jump_check中\n一个完全意外的错误!!!")
+                    }
+                }
+
+            }
         } 
         // 检测下蹲
         if keys.just_pressed(KeyCode::ShiftLeft) {  // 下蹲

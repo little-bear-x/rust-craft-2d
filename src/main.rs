@@ -4,6 +4,7 @@ use bevy_rapier2d::prelude::*;
 pub mod player;
 pub mod camera;
 pub mod cube;
+pub mod debug;
 
 // 通用组件
 pub mod basic;
@@ -12,6 +13,7 @@ pub mod game_map;
 use player::PlayerPlugin;
 use camera::CameraPlugin;
 use cube::CubePlugin;
+use debug::DebugPlugin;
 
 
 fn main(){
@@ -24,5 +26,7 @@ fn main(){
         .add_plugins(PlayerPlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(CubePlugin)
+        // 调试
+        .add_plugins(DebugPlugin)
         .run();
 }

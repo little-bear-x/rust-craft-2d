@@ -20,17 +20,18 @@ fn debug(
     time: Res<Time>,
 ) {
     if timer.0.tick(time.delta()).just_finished() {
-        for player in player_query.iter() {
+        // for player in player_query.iter() {
 
-            println!("{:#?}", &player.map_hashmap);
-            // for (x, yh) in &player.map_hashmap {
-            //     print!("x: {}, y:", x);
-            //     for (y, tp) in yh {
-            //         print!("{}", y);
-            //     }
-            //     println!();
-            // }
-        }
+        //     println!("{:#?}", &player.map_hashmap);
+
+        //     // for (x, yh) in &player.map_hashmap {
+        //     //     print!("x: {}, y:", x);
+        //     //     for (y, tp) in yh {
+        //     //         print!("{}", y);
+        //     //     }
+        //     //     println!();
+        //     // }
+        // }
     }
 }
 

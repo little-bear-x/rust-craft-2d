@@ -10,8 +10,10 @@ const STARTING_PLAYER_POS: Vec2 = Vec2::new(0., 400.);
 
 #[derive(Bundle)]
 struct PlayerBundle {
-    pub vel: Movement,
-    pub model: SpriteBundle,
+    pub player: Player,  // 玩家基本信息
+    pub movement: Movement,  // 玩家移动组件
+    pub player_map: PlayerMapInfo,  // 玩家地图
+    pub model: SpriteBundle,  // 玩家模型
 }
 
 pub struct PlayerPlugin;
@@ -25,42 +27,46 @@ impl Plugin for PlayerPlugin {
 // 创建玩家
 fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>) {
     commands
-        .spawn(Player)  // 创建一个玩家
-        .insert(SpriteBundle{  // 添加玩家模型
-            texture: assets_server.load("player.png"),
-            sprite: Sprite {
-                custom_size: Some(Vec2::new(100., 100.)),
-                ..Default::default()
+        // 添加玩家
+        .spawn(PlayerBundle{
+            player: Player,
+            movement: Movement{
+                basic_speed: 5.,
+                basic_jump_high: 100.,
+                actual_speed: 5.,
+                actual_jump_high: 100.,
+                move_type: GameObjType::Player,
             },
-            transform: Transform {
-                translation: Vec3::new(STARTING_PLAYER_POS.x, STARTING_PLAYER_POS.y, 0.),
-                ..Default::default()
+            player_map: PlayerMapInfo{
+                map_hashmap: HashMap::new()
             },
-            ..Default::default()
-        })
-        .insert( Movement{  // 添加玩家移动组件
-            basic_speed: 5.,
-            basic_jump_high: 100.,
-            actual_speed: 5.,
-            actual_jump_high: 100.,
-            move_type: GameObjType::Player,
-        })
-        .insert(PlayerMapInfo{
-            map_x_vector: vec![],
-            map_hashmap: HashMap::new()
+            model: SpriteBundle{
+                texture: assets_server.load("player.png"),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::new(100., 100.)),
+                    ..Default::default()
+                },
+                transform: Transform {
+                    translation: Vec3::new(STARTING_PLAYER_POS.x, STARTING_PLAYER_POS.y, 0.),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }
         })
         // 物理引擎
-        .insert(RigidBody::Dynamic)  // 创建玩家刚体
-        .insert(Velocity {  // 添加玩家速度
-            linvel: Vec2::new(0.0, 0.0),
-            angvel: 0.,
+        .insert(PhysicsBundle{
+            body: RigidBody::Dynamic,
+            velocity: Velocity {  // 添加玩家速度
+                linvel: Vec2::new(0.0, 0.0),
+                angvel: 0.,
+            },
+            gravity_scale: GravityScale(GRAVITY),
+            sleeping: Sleeping::disabled(),
+            ccd: Ccd::enabled(),
+            mass: AdditionalMassProperties::Mass(1.0),
+            locked_axes: LockedAxes::ROTATION_LOCKED,
+            collider: Collider::cuboid(50., 50.),
         })
-        .insert(GravityScale(GRAVITY))  // 设置重力
-        .insert(Sleeping::disabled())  // 睡眠设置
-        .insert(Ccd::enabled())  // ccd设置
-        .insert(AdditionalMassProperties::Mass(1.0))  // 重量设置
-        .insert(LockedAxes::ROTATION_LOCKED)  // 禁止旋转
-        .insert(Collider::cuboid(50., 50.))  // 碰撞器
         ;
 }
 

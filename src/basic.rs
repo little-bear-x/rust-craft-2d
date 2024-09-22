@@ -53,6 +53,15 @@ pub struct CameraCom;
 pub enum Cube {
     GrassCube,  // 草方块
 }
+// 为cube实现clone trait
+impl Clone for Cube {
+    fn clone(&self) -> Self {
+        match self {
+            Cube::GrassCube => Cube::GrassCube,
+        }
+    }
+}
+
 // 通过方块类型获取方块模块位置
 pub fn get_cube_model(cube_type: &Cube)  -> &'static str {
     match cube_type {

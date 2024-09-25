@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::process::Command;
 
 // 方块文件，用于处理方块逻辑
 use bevy::prelude::*;
@@ -11,11 +12,16 @@ const LOAD_MAP_SIZE: i32 = 7;  // 地图注册大小，在调试时默认为4
 const SPAWN_MAP_SIZE: i32 = 6;  // 地图渲染大小，调试时默认为3
 const LOAD_MAT_TIME: f32 = 1.0;  // 地图加载检测时间，默认1
 
+// 定义系统标签
+struct RemoveCubeLabel;
+
 #[derive(Resource)]
 struct RegCubeCheck(Timer);  // 进行注册方块检测间隔计时器
 
 #[derive(Resource)]
 struct SpawnCubeCheck(Timer);  // 进行方块绘制间隔计时器
+#[derive(Resource)]
+struct RemoveCubeCheck(Timer);  // 进行方块移除间隔计时器
 
 // 方块Bundle
 #[derive(Bundle)]
@@ -30,9 +36,13 @@ impl Plugin for CubePlugin {
         app
             .insert_resource(SpawnCubeCheck(Timer::from_seconds(LOAD_MAT_TIME, TimerMode::Repeating)))
             .insert_resource(RegCubeCheck(Timer::from_seconds(LOAD_MAT_TIME, TimerMode::Repeating)))
+            .insert_resource(RemoveCubeCheck(Timer::from_seconds(LOAD_MAT_TIME, TimerMode::Repeating)))
             .add_systems(Startup, spawn_cube_start)
             .add_systems(Update, reg_cube)
-            .add_systems(Update, spawn_cube)
+            // .add_systems(Update, (remove_cube, spawn_cube))
+            .add_systems(Update, remove_cube)
+            .add_systems(Update, spawn_cube.after(remove_cube))
+            
         ;
     }
 }
@@ -100,43 +110,13 @@ fn reg_cube(
                     let mut y_hash_map: HashMap<i32, Cube> = HashMap::new();  // map_hashmap的第二级哈希表
                     y_hash_map.insert(-2, Cube::GrassCube);
                     player_map_info.map_hashmap.insert(((player.translation.x/100.0).round()) as i32 + i, y_hash_map);
-
-                    // // 生成方块
-                    // commands
-                    //     .spawn(CubeBundle{
-                    //         cube_type: Cube::GrassCube,
-                    //         model: SpriteBundle{  // 模型
-                    //             texture: assets_server.load(get_cube_model(&Cube::GrassCube)),
-                    //             sprite: Sprite {
-                    //                 custom_size: Some(Vec2::new(100., 100.)),
-                    //                 ..Default::default()
-                    //             },
-                    //             transform: Transform {
-                    //                 translation: Vec3::new(((((player.translation.x/100.0).round()) as i32 + i) * 100) as f32, -200., 0.),
-                    //                 ..Default::default()
-                    //             },
-                    //             ..Default::default()
-                    //         }
-                    //     })
-                    //     // 物理引擎
-                    //     .insert(RigidBody::KinematicPositionBased)
-                    //     .insert(Velocity {
-                    //         linvel: Vec2::new(0., 0.),
-                    //         angvel: 0.2,
-                    //     })
-                    //     .insert(GravityScale(GRAVITY))
-                    //     .insert(Sleeping::disabled())
-                    //     .insert(Ccd::enabled())
-                    //     .insert(AdditionalMassProperties::Mass(1.0))
-                    //     .insert(Collider::cuboid(50., 50.))
-                    // ;
                 }
             }
         }
     }
 }
 
-// 通过表生成/移除方块
+// 通过表生成方块
 fn spawn_cube(
     time: Res<Time>,
     mut timer: ResMut<SpawnCubeCheck>,
@@ -144,17 +124,23 @@ fn spawn_cube(
     player_query: Query<(&Transform, &PlayerMapInfo), With<Player>>,
     assets_server: Res<AssetServer>,
 ) {
+
     if timer.0.tick(time.delta()).just_finished() {
+        info!("b");
         for (player, player_map_info) in player_query.iter() {
             for x in (((player.translation.x/100.0).round()) as i32) - SPAWN_MAP_SIZE
                 ..(((player.translation.x/100.0).round()) as i32) + SPAWN_MAP_SIZE+1 {
                 for y in (((player.translation.y/100.0).round()) as i32) - SPAWN_MAP_SIZE
                     ..(((player.translation.y/100.0).round()) as i32) + SPAWN_MAP_SIZE+1 {
+                    // 判断是否等于玩家脚下的方块，避免重复创建
+                    // 我知道这段代码写的很乱，但是目前没有想到别的解决方法了。
+                    if (((player.translation.x/100.0).round()) as i32) != x && 
+                        (((player.translation.y/100.0).round()) as i32) != y+1 {
+                        // 判断是否存在x
                         if player_map_info.map_hashmap.contains_key(&x) {
-                            // info!("1");
+                            // 判断是否存在y
                             if match player_map_info.map_hashmap.get(&x).cloned() {
                                 Some(s) => {
-                                    info!("keyin: {}, y: {}", s.contains_key(&y), y);
                                     s.contains_key(&y)
                                 }
                                 None => {
@@ -162,7 +148,6 @@ fn spawn_cube(
                                     false
                                 }
                             } {
-                                info!("2");
                                 // 获取cube的值
                                 let cube = match player_map_info.map_hashmap.get(&x).cloned() {
                                     Some(ys) => {
@@ -211,46 +196,29 @@ fn spawn_cube(
                             }       
                         }
                     }
+                }
             }
-            // for (xk, xv) in &player_map_info.map_hashmap {
-            //     if ((((player.translation.x/100.0).round()) as i32) - xk).abs() <= LOAD_MAP_SIZE {
-            //         info!("1");
-            //         for (yk, yv) in xv {
-            //             if ((((player.translation.y/100.0).round()) as i32) - yk).abs() <= 2 {
-            //                 info!("2");
-            //                 // 生成方块
-            //                 commands
-            //                     .spawn(CubeBundle{
-            //                         cube_type: yv.clone(),
-            //                         model: SpriteBundle{  // 模型
-            //                             texture: assets_server.load(get_cube_model(yv)),
-            //                             sprite: Sprite {
-            //                                 custom_size: Some(Vec2::new(100., 100.)),
-            //                                 ..Default::default()
-            //                             },
-            //                             transform: Transform {
-            //                                 translation: Vec3::new((xk * 100) as f32, (yk * 100) as f32, 0.),
-            //                                 ..Default::default()
-            //                             },
-            //                             ..Default::default()
-            //                         }
-            //                     })
-            //                     // 物理引擎
-            //                     .insert(RigidBody::KinematicPositionBased)
-            //                     .insert(Velocity {
-            //                         linvel: Vec2::new(0., 0.),
-            //                         angvel: 0.2,
-            //                     })
-            //                     .insert(GravityScale(GRAVITY))
-            //                     .insert(Sleeping::disabled())
-            //                     .insert(Ccd::enabled())
-            //                     .insert(AdditionalMassProperties::Mass(1.0))
-            //                     .insert(Collider::cuboid(50., 50.))
-            //                 ;
-            //             }
-            //         }
-            //     }
-            // }
+        }
+    }
+}
+
+// 删除除了玩家脚下的方块（方块没帧更新）
+fn remove_cube(
+    time: Res<Time>,
+    mut timer: ResMut<RemoveCubeCheck>,
+    mut commands: Commands,
+    player_query: Query<&Transform, With<Player>>,
+    cube_query: Query<(Entity, &Transform), With<Cube>>,
+){
+    if timer.0.tick(time.delta()).just_finished() {
+        info!("a");
+        for player_transform in player_query.iter(){
+            for (entity, cube_transform) in cube_query.iter() {
+                if (player_transform.translation.x / 100.0).ceil() != (cube_transform.translation.x /100.).ceil() && 
+                    (player_transform.translation.y / 100.0).ceil() - 1.0 != (cube_transform.translation.y /100.).ceil() {
+                    commands.entity(entity).despawn();
+                } 
+            }
         }
     }
 }

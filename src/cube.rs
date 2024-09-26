@@ -8,8 +8,8 @@ use bevy_rapier2d::prelude::*;
 use super::basic::*;
 use super::game_map::*;
 
-const LOAD_MAP_SIZE: i32 = 7;  // 地图注册大小，在调试时默认为4
-const SPAWN_MAP_SIZE: i32 = 6;  // 地图渲染大小，调试时默认为3
+const LOAD_MAP_SIZE: i32 = 5;  // 地图注册大小，在调试时默认为4
+const SPAWN_MAP_SIZE: i32 = 3;  // 地图渲染大小，调试时默认为3
 const LOAD_MAT_TIME: f32 = 1.0;  // 地图加载检测时间，默认1
 
 // 定义系统标签
@@ -126,16 +126,14 @@ fn spawn_cube(
 ) {
 
     if timer.0.tick(time.delta()).just_finished() {
-        info!("b");
         for (player, player_map_info) in player_query.iter() {
             for x in (((player.translation.x/100.0).round()) as i32) - SPAWN_MAP_SIZE
                 ..(((player.translation.x/100.0).round()) as i32) + SPAWN_MAP_SIZE+1 {
-                for y in (((player.translation.y/100.0).round()) as i32) - SPAWN_MAP_SIZE
-                    ..(((player.translation.y/100.0).round()) as i32) + SPAWN_MAP_SIZE+1 {
+                for y in (((player.translation.y/100.0).round()) as i32) - SPAWN_MAP_SIZE - 1
+                    ..(((player.translation.y/100.0).round()) as i32) + SPAWN_MAP_SIZE {
                     // 判断是否等于玩家脚下的方块，避免重复创建
                     // 我知道这段代码写的很乱，但是目前没有想到别的解决方法了。
-                    if (((player.translation.x/100.0).round()) as i32) != x && 
-                        (((player.translation.y/100.0).round()) as i32) != y+1 {
+                    if (((player.translation.x/100.0).round()) as i32) != x || (((player.translation.y/100.0).round()) as i32) != y+1 {
                         // 判断是否存在x
                         if player_map_info.map_hashmap.contains_key(&x) {
                             // 判断是否存在y
@@ -202,7 +200,7 @@ fn spawn_cube(
     }
 }
 
-// 删除除了玩家脚下的方块（方块没帧更新）
+// 删除除了玩家脚下的方块
 fn remove_cube(
     time: Res<Time>,
     mut timer: ResMut<RemoveCubeCheck>,
@@ -211,11 +209,11 @@ fn remove_cube(
     cube_query: Query<(Entity, &Transform), With<Cube>>,
 ){
     if timer.0.tick(time.delta()).just_finished() {
-        info!("a");
+        // info!("a");
         for player_transform in player_query.iter(){
             for (entity, cube_transform) in cube_query.iter() {
-                if (player_transform.translation.x / 100.0).ceil() != (cube_transform.translation.x /100.).ceil() && 
-                    (player_transform.translation.y / 100.0).ceil() - 1.0 != (cube_transform.translation.y /100.).ceil() {
+                if (player_transform.translation.x / 100.0).round() != (cube_transform.translation.x /100.).round() && 
+                    (player_transform.translation.y / 100.0).round() - 1.0 != (cube_transform.translation.y /100.).round()+1. {
                     commands.entity(entity).despawn();
                 } 
             }

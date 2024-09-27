@@ -52,12 +52,16 @@ pub struct CameraCom;
 #[derive(Component, Debug)]
 pub enum Cube {
     GrassCube,  // 草方块
+    SoilCube,  // 土方块
+    StoneCube,  // 石块
 }
 // 为cube实现clone trait
 impl Clone for Cube {
     fn clone(&self) -> Self {
         match self {
             Cube::GrassCube => Cube::GrassCube,
+            Cube::SoilCube => Cube::SoilCube,
+            Cube::StoneCube => Cube::StoneCube,
         }
     }
 }
@@ -67,6 +71,12 @@ pub fn get_cube_model(cube_type: &Cube)  -> &'static str {
     match cube_type {
         Cube::GrassCube => {
             "cube/grass.png"
+        }
+        Cube::SoilCube => {
+            "cube/soil.png"
+        }
+        Cube::StoneCube => {
+            "cube/stone.png"
         }
     }
 }

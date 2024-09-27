@@ -13,7 +13,7 @@ pub mod game_map;
 use player::PlayerPlugin;
 use camera::CameraPlugin;
 use cube::CubePlugin;
-use debug::DebugPlugin;
+// use debug::DebugPlugin;
 
 
 fn main(){
@@ -27,6 +27,6 @@ fn main(){
         .add_plugins(CameraPlugin)
         .add_plugins(CubePlugin)
         // 调试
-        .add_plugins(DebugPlugin)
+        // .add_plugins(DebugPlugin)
         .run();
 }

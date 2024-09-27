@@ -5,7 +5,7 @@ use bevy_rapier2d::prelude::*;
 use super::basic::*;
 use super::game_map::*;
 
-const STARTING_PLAYER_POS: Vec2 = Vec2::new(0., 400.);
+const STARTING_PLAYER_POS: Vec2 = Vec2::new(1., 400.);
 
 
 #[derive(Bundle)]

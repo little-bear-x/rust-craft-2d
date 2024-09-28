@@ -5,6 +5,7 @@ pub mod player;
 pub mod camera;
 pub mod cube;
 pub mod debug;
+pub mod window;
 
 // 通用组件
 pub mod basic;
@@ -14,6 +15,7 @@ use player::PlayerPlugin;
 use camera::CameraPlugin;
 use cube::CubePlugin;
 // use debug::DebugPlugin;
+use window::WindowPlugin;
 
 
 fn main(){
@@ -28,5 +30,7 @@ fn main(){
         .add_plugins(CubePlugin)
         // 调试
         // .add_plugins(DebugPlugin)
+        // 窗口
+        .add_plugins(WindowPlugin)
         .run();
 }

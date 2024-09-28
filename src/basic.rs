@@ -48,6 +48,9 @@ pub struct Player;
 // 标记为相机
 #[derive(Component)]
 pub struct CameraCom;
+// 标记为鼠标
+#[derive(Component)]
+pub struct CursorCom;
 // 标记为方块, 并指定方块类型
 #[derive(Component, Debug)]
 pub enum Cube {

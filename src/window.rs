@@ -4,6 +4,7 @@ use super::basic::*;
 const CUSTOM_CURSOR_SIZE: f32 = 30.0;
 const CURSOR_SENSITIVITY: f32 = 0.75;  // 鼠标灵敏度
 static mut SHOWING_MOUSE: bool = false;  // 鼠标是否呼出
+static mut CURSOR_TO_PLAYER: (f32, f32) = (0.0, 0.0);  // 鼠标与玩家距离
 
 pub struct WindowPlugin;
 impl Plugin for WindowPlugin {
@@ -22,7 +23,7 @@ fn setup_window(
     let mut window = window.single_mut();
     window.cursor.visible = false;
     window.cursor.grab_mode = CursorGrabMode::Locked;
-    window.title = "rust mine 2d".to_string();
+    window.title = "rust craft 2d".to_string();
     // 创建鼠标初始位置
     commands.spawn(SpriteBundle {
         texture: assets_server.load("cursor.png"),
@@ -37,8 +38,9 @@ fn setup_window(
 
 // 更新自定义鼠标样式位置
 fn update_mouse(
-    mut cursor_sprite_query: Query<&mut Transform, With<CursorCom>>,
+    mut cursor_sprite_query: Query<&mut Transform, (With<CursorCom>, Without<Player>)>,
     mut events: EventReader<MouseMotion>,
+    player_query: Query<&Transform, (With<Player>, Without<CursorCom>)>
 ) {
     // tip: 跟随玩家移动的在玩家移动事件当中。
     // 位于player.rs/move_player
@@ -47,13 +49,20 @@ fn update_mouse(
             return;
         }
     }
+    let player = player_query.single();
     for event in events.read() {
-        if let Ok(mut transform) = cursor_sprite_query.get_single_mut() {
-            // 更新Sprite的位置，使其与鼠标位置一致
-            // println!("{}", event.delta.x);
-            // println!("{}", event.delta.y);
-            transform.translation.x = transform.translation.x + (event.delta.x) * CURSOR_SENSITIVITY;
-            transform.translation.y = transform.translation.y - (event.delta.y) * CURSOR_SENSITIVITY;
+        // 更新Sprite的位置，使其与鼠标位置一致
+        // println!("{}", event.delta.x);
+        // println!("{}", event.delta.y);
+        unsafe {
+            CURSOR_TO_PLAYER = (CURSOR_TO_PLAYER.0 + event.delta.x * CURSOR_SENSITIVITY, 
+                CURSOR_TO_PLAYER.1 + event.delta.y * CURSOR_SENSITIVITY);
+        }
+    }
+    if let Ok(mut transform) = cursor_sprite_query.get_single_mut() {
+        unsafe {
+            transform.translation.x = player.translation.x + CURSOR_TO_PLAYER.0;
+            transform.translation.y = player.translation.y - CURSOR_TO_PLAYER.1;
             transform.translation.z = 1.0; // 确保Sprite在最顶层
         }
     }

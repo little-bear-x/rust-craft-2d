@@ -3335,7 +3335,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-mine-2d"
+name = "rust-craft-2d"
 version = "0.1.0"
 dependencies = [
  "bevy",

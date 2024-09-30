@@ -1,7 +1,8 @@
 // 玩家文件，用于处理玩家逻辑
-use bevy::prelude::*;
+use bevy:: prelude::*;
 use std::collections::HashMap;
 use bevy_rapier2d::prelude::*;
+
 use super::basic::*;
 use super::game_map::*;
 
@@ -73,7 +74,7 @@ fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>) {
 // 玩家移动\下蹲
 fn move_player(
     keys: Res<ButtonInput<KeyCode>>,
-    mut cursor_sprite_query: Query<&mut Transform, (With<CursorCom>, Without<Player>)>,  // 鼠标跟随移动
+    // mut cursor_sprite_query: Query<&mut Transform, (With<CursorCom>, Without<Player>)>,  // 鼠标跟随移动
     mut query: Query<(&mut Transform, &mut Sprite, &mut Movement, &mut Velocity, &PlayerMapInfo), With<Player>>
 ) {
     for (
@@ -86,17 +87,17 @@ fn move_player(
         // 检测移动
         if keys.pressed(KeyCode::KeyA) {  // 向右
             transform.translation.x -= movement.actual_speed;
-            if let Ok(mut mouse_transform) = cursor_sprite_query.get_single_mut() {
-                mouse_transform.translation.x = mouse_transform.translation.x-movement.actual_speed;
-            }
+            // if let Ok(mut mouse_transform) = cursor_sprite_query.get_single_mut() {
+            //     mouse_transform.translation.x = mouse_transform.translation.x-movement.actual_speed;
+            // }
         } else if keys.pressed(KeyCode::KeyD) {  // 向左
             transform.translation.x += movement.actual_speed;
-            if let Ok(mut mouse_transform) = cursor_sprite_query.get_single_mut() {
-                mouse_transform.translation.x = mouse_transform.translation.x+movement.actual_speed;
-            }
+            // if let Ok(mut mouse_transform) = cursor_sprite_query.get_single_mut() {
+            //     mouse_transform.translation.x = mouse_transform.translation.x+movement.actual_speed;
+            // }
         }
         // 检测跳跃
-        if keys.just_pressed(KeyCode::Space) {  // 跳跃
+        if keys.pressed(KeyCode::Space) {  // 跳跃
             if player_map.map_hashmap.contains_key(&(((transform.translation.x/100.0).round()) as i32)){
                 match player_map.map_hashmap.get(&(((transform.translation.x/100.0).round()) as i32)) {
                     Some(s) => {
@@ -124,3 +125,5 @@ fn move_player(
         }
     }
 }
+
+

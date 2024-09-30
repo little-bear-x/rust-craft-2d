@@ -57,6 +57,7 @@ pub enum Cube {
     GrassCube,  // 草方块
     SoilCube,  // 土方块
     StoneCube,  // 石块
+    Plank,  // 木板
 }
 // 为cube实现clone trait
 impl Clone for Cube {
@@ -65,6 +66,7 @@ impl Clone for Cube {
             Cube::GrassCube => Cube::GrassCube,
             Cube::SoilCube => Cube::SoilCube,
             Cube::StoneCube => Cube::StoneCube,
+            Cube::Plank => Cube::Plank,
         }
     }
 }
@@ -80,6 +82,9 @@ pub fn get_cube_model(cube_type: &Cube)  -> &'static str {
         }
         Cube::StoneCube => {
             "cube/stone.png"
+        }
+        Cube::Plank => {
+            "cube/plank.png"
         }
     }
 }

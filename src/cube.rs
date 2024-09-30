@@ -9,7 +9,7 @@ use super::game_map::*;
 
 const LOAD_MAP_SIZE: i32 = 10;  // 地图注册大小，在调试时默认为4
 const SPAWN_MAP_SIZE: i32 = 8;  // 地图渲染大小，调试时默认为3
-const LOAD_MAT_TIME: f32 = 1.0;  // 地图加载检测时间，默认1
+const LOAD_MAT_TIME: f32 = 0.1;  // 地图加载检测时间，默认1
 
 #[derive(Resource)]
 struct RegCubeCheck(Timer);  // 进行注册方块检测间隔计时器
@@ -38,7 +38,7 @@ impl Plugin for CubePlugin {
             // .add_systems(Update, (remove_cube, spawn_cube))
             .add_systems(Update, remove_cube)
             .add_systems(Update, spawn_cube.after(remove_cube))
-            
+            .add_systems(Update, player_cube)
         ;
     }
 }
@@ -209,5 +209,95 @@ fn remove_cube(
         for entity in cube_query.iter() {
                 commands.entity(entity).despawn();
         }
+    }
+}
+
+// 玩家操作方块
+fn player_cube(
+    mut commands: Commands,
+    cube_query: Query<(Entity, &Transform), With<Cube>>,
+    cursor_sprite_query: Query<&Transform, (With<CursorCom>, Without<Cube>)>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    mut game_map_query: Query<&mut PlayerMapInfo, With<Player>>,
+    assets_server: Res<AssetServer>,
+) {
+    if buttons.pressed(MouseButton::Left) {
+        let cursor_pos: (f32, f32) = ((cursor_sprite_query.get_single().unwrap().translation.x/100.).round(),
+            (cursor_sprite_query.get_single().unwrap().translation.y/100.).round());
+        let mut game_map = game_map_query.get_single_mut().unwrap();
+
+        // 检查是否存在x坐标
+        if game_map.map_hashmap.contains_key(&(cursor_pos.0 as i32)) {
+            match game_map.map_hashmap.get(&(cursor_pos.0 as i32)) {
+                Some(s) => {
+                    // 检查是否存在y坐标
+                    if s.contains_key(&(cursor_pos.1 as i32)) {
+                        // 存在则删除
+                        for (entity, cube_transform) in cube_query.iter() {
+                            if cube_transform.translation.x == cursor_pos.0 * 100. && cube_transform.translation.y == cursor_pos.1 * 100. {
+                                commands.entity(entity).despawn();
+                                game_map.map_hashmap.get_mut(&(cursor_pos.0 as i32)).unwrap().remove(&(cursor_pos.1 as i32));
+                            }
+                        }
+                    }
+                }
+                None => {
+                    error!("出现错误\n由player.rs引起, 位于fn player_cube\n一个完全意外的错误!!!")
+                }
+            }
+        }
+    } else if buttons.pressed(MouseButton::Right) {
+        let cursor_pos: (f32, f32) = ((cursor_sprite_query.get_single().unwrap().translation.x/100.).round(),
+            (cursor_sprite_query.get_single().unwrap().translation.y/100.).round());
+        let mut game_map = game_map_query.get_single_mut().unwrap();
+
+        // 获取y字典
+        let mut map_y = match game_map.map_hashmap.get_mut(&(cursor_pos.0 as i32)) {
+            Some(s) => {
+                if s.contains_key(&(cursor_pos.1 as i32)) {
+                    return;
+                }
+                s.clone()
+            },
+            None => {
+                let y_hash_map: HashMap<i32, Cube> = HashMap::new();
+                y_hash_map.clone()
+            },
+        };
+        map_y.insert(cursor_pos.1 as i32, Cube::Plank);
+        game_map.map_hashmap.insert(cursor_pos.0 as i32, map_y);
+
+        // 在此处渲染方块
+        commands
+            .spawn(CubeBundle{
+                cube_type: Cube::Plank,
+                model: SpriteBundle{  // 模型
+                    texture: assets_server.load(get_cube_model(&Cube::Plank)),
+                    sprite: Sprite {
+                        custom_size: Some(Vec2::new(100., 100.)),
+                        ..Default::default()
+                    },
+                    transform: Transform {
+                        translation: Vec3::new(cursor_pos.0 * 100., cursor_pos.1 * 100., 0.),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }
+            })  // 创建方块
+            // 物理引擎
+            .insert(PhysicsBundle{
+                body: RigidBody::KinematicPositionBased,
+                velocity: Velocity {
+                    linvel: Vec2::new(0., 0.),
+                    angvel: 0.2,
+                },
+                gravity_scale: GravityScale(GRAVITY),
+                sleeping: Sleeping::disabled(),
+                ccd: Ccd::enabled(),
+                mass: AdditionalMassProperties::Mass(1.0),
+                locked_axes: LockedAxes::ROTATION_LOCKED,
+                collider: Collider::cuboid(50., 50.),
+            })
+        ;
     }
 }

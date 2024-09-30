@@ -23,7 +23,7 @@ fn main(){
         .add_plugins(DefaultPlugins)
         // 物理引擎
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugins(RapierDebugRenderPlugin::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
         // 其他
         .add_plugins(PlayerPlugin)
         .add_plugins(CameraPlugin)

@@ -10,12 +10,14 @@ pub mod window;
 // 通用组件
 pub mod basic;
 pub mod game_map;
+pub mod gameui;
 
 use player::PlayerPlugin;
 use camera::CameraPlugin;
 use cube::CubePlugin;
 // use debug::DebugPlugin;
 use window::WindowPlugin;
+use gameui::GameUiPlugin;
 
 
 fn main(){
@@ -32,5 +34,6 @@ fn main(){
         // .add_plugins(DebugPlugin)
         // 窗口
         .add_plugins(WindowPlugin)
+        .add_plugins(GameUiPlugin)
         .run();
 }

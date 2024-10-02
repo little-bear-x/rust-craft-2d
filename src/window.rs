@@ -27,7 +27,7 @@ fn setup_window(
     // 创建鼠标初始位置
     commands.spawn(SpriteBundle {
         texture: assets_server.load("cursor.png"),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
+        transform: Transform::from_translation(Vec3::new(0., 0., 99.0)),
         sprite: Sprite {
             custom_size: Some(Vec2::new(CUSTOM_CURSOR_SIZE, CUSTOM_CURSOR_SIZE)),
             ..Default::default()
@@ -38,9 +38,9 @@ fn setup_window(
 
 // 更新自定义鼠标样式位置
 fn update_mouse(
-    mut cursor_sprite_query: Query<&mut Transform, (With<CursorCom>, Without<Player>)>,
+    mut cursor_sprite_query: Query<&mut Transform, (With<CursorCom>, Without<CameraCom>)>,
     mut events: EventReader<MouseMotion>,
-    player_query: Query<&Transform, (With<Player>, Without<CursorCom>)>
+    camera_query: Query<&Transform, (With<CameraCom>, Without<CursorCom>)>
 ) {
     // tip: 跟随玩家移动的在玩家移动事件当中。
     // 位于player.rs/move_player
@@ -49,7 +49,7 @@ fn update_mouse(
             return;
         }
     }
-    let player = player_query.single();
+    let camera = camera_query.single();
     for event in events.read() {
         // 更新Sprite的位置，使其与鼠标位置一致
         // println!("{}", event.delta.x);
@@ -61,9 +61,9 @@ fn update_mouse(
     }
     if let Ok(mut transform) = cursor_sprite_query.get_single_mut() {
         unsafe {
-            transform.translation.x = player.translation.x + CURSOR_TO_PLAYER.0;
-            transform.translation.y = player.translation.y - CURSOR_TO_PLAYER.1;
-            transform.translation.z = 1.0; // 确保Sprite在最顶层
+            transform.translation.x = camera.translation.x + CURSOR_TO_PLAYER.0;
+            transform.translation.y = camera.translation.y - CURSOR_TO_PLAYER.1;
+            transform.translation.z = 99.0; // 确保Sprite在最顶层
         }
     }
 }

@@ -20,10 +20,21 @@ pub struct PhysicsBundle {
 
 // 游戏逻辑
 // 物体类型
+#[derive(Component)]
 pub enum GameObjType {
     Player,  // 玩家
     Creature,  // 生物
-    Cube,  // 方块
+    Cube(Cube),  // 方块
+}
+// 为GameObjType实现clone trait
+impl Clone for GameObjType {
+    fn clone(&self) -> Self {
+        match self {
+            GameObjType::Player => GameObjType::Player,
+            GameObjType::Creature => GameObjType::Creature,
+            GameObjType::Cube(c) => GameObjType::Cube(c.clone()),
+        }
+    }
 }
 
 // 玩家速度
@@ -51,6 +62,17 @@ pub struct CameraCom;
 // 标记为鼠标
 #[derive(Component)]
 pub struct CursorCom;
+// 标记为物品栏
+#[derive(Component)]
+pub struct BarCom{
+    pub bar_index: usize,  // 物品栏索引(0-4)
+    pub bar_item: Option<GameObjType>,  // 物品栏上的物品，若为None则无物品
+}
+// 标记为物品栏的选择器
+#[derive(Component)]
+pub struct BarSelectorCom{
+    pub select_index: usize,  // 正在选择的索引
+}
 // 标记为方块, 并指定方块类型
 #[derive(Component, Debug)]
 pub enum Cube {
@@ -72,8 +94,8 @@ impl Clone for Cube {
 }
 
 // 通过方块类型获取方块模块位置
-pub fn get_cube_model(cube_type: &Cube)  -> &'static str {
-    match cube_type {
+pub fn get_cube_model(game_obj_type: &Cube)  -> &'static str {
+    match game_obj_type {
         Cube::GrassCube => {
             "cube/grass.png"
         }

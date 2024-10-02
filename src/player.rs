@@ -44,7 +44,7 @@ fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>) {
             model: SpriteBundle{
                 texture: assets_server.load("player.png"),
                 sprite: Sprite {
-                    custom_size: Some(Vec2::new(100., 100.)),
+                    custom_size: Some(Vec2::new(80., 80.)),
                     ..Default::default()
                 },
                 transform: Transform {

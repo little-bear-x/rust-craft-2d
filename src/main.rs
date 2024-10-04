@@ -29,7 +29,7 @@ fn main(){
             player_map: HashMap::new(),
             is_controlling: true,
             is_paused: false,
-            player_bar: from_fn(|_| Option::None),
+            player_bar: from_fn(|_| (Option::None, 0)),
             player_bar_select_index: 0
         })
 

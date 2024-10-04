@@ -264,7 +264,7 @@ fn player_cube(
                 },
             };
             // 放置方块的类型
-            let cube_type = match player_info.player_bar[player_info.player_bar_select_index].clone() {
+            let cube_type = match player_info.player_bar[player_info.player_bar_select_index].0.clone() {
                 Some(s) => {
                     match s {
                         GameObjType::Cube(cube) => {
@@ -313,6 +313,15 @@ fn player_cube(
                     collider: Collider::cuboid(50., 50.),
                 })
             ;
+
+            // 修改玩家放置后方块的数量
+                let i = player_info.player_bar_select_index;
+            if player_info.player_bar[player_info.player_bar_select_index.clone()].1 != -1 {
+                player_info.player_bar[i].1 -= 1;
+            }
+            if player_info.player_bar[player_info.player_bar_select_index.clone()].1 == 0 {
+                player_info.player_bar[i].0 = None;
+            }
         }
     }
 }

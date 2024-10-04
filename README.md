@@ -4,9 +4,9 @@
 ![alt text](./assets/docs/intro-pic.png)
 
 相信对于看到这个项目的各位来说编译一个rust项目肯定是不成问题了，所以。。。
-目前暂时只提供源代码，可自行使用cargo进行编译(前往release下载最新版本)
+目前暂时只提供源代码，可自行使用cargo进行编译
 
-此项目将~~不更新~~不定期更新
+此项目将 ~~不更新~~ 不定期更新
 
 # 快速开始
 
@@ -24,6 +24,20 @@
 5. 跳跃：空格键
 6. 潜行：左shift键（目前潜行没有任何用途，仅仅减慢移动速度，~~狗都不用~~）
 7. 切换方块：目前仅可以使用鼠标滚轮切换方块
+
+# 0.2.1新增内容
+新增可放置方块数量，-1为无限。
+目前不提供可视化调节，可更改gameui.rs中第50-56行
+```rust
+player_info.player_bar = [
+    (Some(GameObjType::Cube(Cube::Plank)), 32),
+    (Some(GameObjType::Cube(Cube::GrassCube)), -1),
+    (Some(GameObjType::Cube(Cube::SoilCube)), -1),
+    (Some(GameObjType::Cube(Cube::StoneCube)), -1),
+    (Some(GameObjType::Cube(Cube::StoneBrick)), 32)
+];
+```
+后的数字来更改数量
 
 # 未来更新
 

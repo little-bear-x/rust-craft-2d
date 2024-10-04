@@ -1,4 +1,4 @@
-use bevy::{input::mouse::{MouseWheel, MouseScrollUnit}, prelude::*, window::PrimaryWindow};
+use bevy::{input::mouse::{MouseWheel, MouseScrollUnit}, prelude::*, window::PrimaryWindow, text::Text2dBounds};
 use super::basic::*;
 
 pub struct GameUiPlugin;
@@ -48,11 +48,11 @@ fn setup(
         .insert(BarCom);
     }
     player_info.player_bar = [
-        Some(GameObjType::Cube(Cube::Plank)),
-        Some(GameObjType::Cube(Cube::GrassCube)),
-        Some(GameObjType::Cube(Cube::SoilCube)),
-        Some(GameObjType::Cube(Cube::StoneCube)),
-        Some(GameObjType::Cube(Cube::StoneBrick))
+        (Some(GameObjType::Cube(Cube::Plank)), 32),
+        (Some(GameObjType::Cube(Cube::GrassCube)), -1),
+        (Some(GameObjType::Cube(Cube::SoilCube)), -1),
+        (Some(GameObjType::Cube(Cube::StoneCube)), -1),
+        (Some(GameObjType::Cube(Cube::StoneBrick)), 32)
     ];
     // 初始化物品栏选中
     commands.spawn(SpriteBundle {
@@ -66,12 +66,13 @@ fn setup(
     }).insert(BarSelectorCom);
     player_info.player_bar_select_index = 0;
 
-    // 渲染物品栏上的图标
-    for (i, bar_icon) in player_info.player_bar.iter().enumerate() {
+    // 渲染物品栏上的图标与数量
+    for (i, (bar_icon, num)) in player_info.player_bar.iter().enumerate() {
         match bar_icon {
             Some(game_obj_type) => {
                 match game_obj_type.clone() {
                     GameObjType::Cube(cube) => {
+                        println!("{}", num.to_string());
                         commands.spawn(SpriteBundle {
                             texture: asset_server.load(get_cube_model(&cube)),
                             transform: Transform::from_xyz((50*((i as isize)-2)) as f32, sprite_position_y, 9.0),
@@ -80,7 +81,31 @@ fn setup(
                                 ..Default::default()
                             },
                             ..default()
-                        }).insert(BarIconCom{ bar_index: i });
+                        }).insert(BarIconCom{ bar_index: i })
+                        // 渲染物品栏上物品的数量
+                        .with_children(|builder| {
+                            builder.spawn(Text2dBundle {
+                                text: Text {
+                                    sections: vec![TextSection::new(
+                                        num.to_string(),
+                                        TextStyle {
+                                            font: asset_server.load("fonts/white-border.ttf"),
+                                            font_size: 20.0,
+                                            ..default()
+                                        }
+                                    )],
+                                    justify: JustifyText::Left,
+                                    ..Default::default()
+                                },
+                                text_2d_bounds: Text2dBounds {
+                                    // Wrap text in the rectangle
+                                    size: Vec2::new(30., 30.),
+                                },
+                                // ensure the text is drawn on top of the box
+                                transform: Transform::from_xyz(0., 0., 0.),
+                                ..default()
+                            }).insert(BarTextCom { bar_index: i });
+                        });
                     }
                     _ => {}
                 }
@@ -93,9 +118,11 @@ fn setup(
 
 // 更新bar
 fn update_bar(
+    mut commands: Commands,
     mut bar_query: Query<&mut Transform, (Without<BarIconCom>, With<BarCom>, Without<CameraCom>, Without<BarSelectorCom>)>,
     mut bar_selector_query: Query<&mut Transform, (Without<BarIconCom>, With<BarSelectorCom>, Without<CameraCom>, Without<BarCom>)>,
-    mut bar_icon_query: Query<(&mut Transform, &BarIconCom), (With<BarIconCom>, Without<CameraCom>, Without<BarSelectorCom>, Without<BarCom>)>,
+    mut bar_icon_query: Query<(&mut Transform, &BarIconCom, Entity), (With<BarIconCom>, Without<CameraCom>, Without<BarSelectorCom>, Without<BarCom>)>,
+    mut bar_text_query: Query<(&mut Text, &BarTextCom, Entity), With<BarTextCom>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     camera_query: Query<&Transform, (Without<BarIconCom>, With<CameraCom>, Without<BarCom>, Without<BarSelectorCom>)>,
     player_info: Res<PlayerInfo>
@@ -117,9 +144,21 @@ fn update_bar(
     bar_selector_translation.translation.y = camera.y + sprite_position_y;
 
     // 更新物品栏图标位置
-    for (mut bar_transform, i) in bar_icon_query.iter_mut() {
+    for (mut bar_transform, i, entity) in bar_icon_query.iter_mut() {
+        // 如果方块数量为0，则删除该图标
+        if player_info.player_bar[i.bar_index].1 == 0 {
+            commands.entity(entity).despawn();
+        }
         bar_transform.translation.x = camera.x + (50*((i.bar_index as isize)-2)) as f32;
         bar_transform.translation.y = camera.y + sprite_position_y;
+    }
+
+    // 更新物品栏文字
+    for (mut text, i, entity) in bar_text_query.iter_mut() {
+        if player_info.player_bar[i.bar_index].1 == 0 {
+            commands.entity(entity).despawn();
+        }
+        text.sections[0].value = player_info.player_bar[i.bar_index].1.to_string();
     }
 }
 

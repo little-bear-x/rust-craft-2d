@@ -48,11 +48,11 @@ fn setup(
         .insert(BarCom);
     }
     player_info.player_bar = [
-        (Some(GameObjType::Cube(Cube::Plank)), 32),
-        (Some(GameObjType::Cube(Cube::GrassCube)), -1),
-        (Some(GameObjType::Cube(Cube::SoilCube)), -1),
-        (Some(GameObjType::Cube(Cube::StoneCube)), -1),
-        (Some(GameObjType::Cube(Cube::StoneBrick)), 32)
+        (Some(GameObjType::Cube(Cube::Plank)), if player_info.is_creative_mode { -1 } else { 64 }),
+        (Some(GameObjType::Cube(Cube::GrassCube)), if player_info.is_creative_mode { -1 } else { 64 }),
+        (Some(GameObjType::Cube(Cube::SoilCube)), if player_info.is_creative_mode { -1 } else { 64 }),
+        (Some(GameObjType::Cube(Cube::StoneCube)), if player_info.is_creative_mode { -1 } else { 64 }),
+        (Some(GameObjType::Cube(Cube::StoneBrick)), if player_info.is_creative_mode { -1 } else { 64 })
     ];
     // 初始化物品栏选中
     commands.spawn(SpriteBundle {

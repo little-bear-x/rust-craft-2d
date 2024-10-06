@@ -48,6 +48,7 @@ pub struct PlayerInfo {
     pub player_map: HashMap<i32, HashMap<i32, Cube>>,  // 玩家地图哈希表
     pub is_controlling: bool,  // 玩家是否处于控制状态（是否没有呼出鼠标）
     pub is_paused: bool,  // 游戏是否处于暂停状态
+    pub is_creative_mode: bool,  // 是否处于创造模式
     pub player_bar: [(Option<GameObjType>, isize); 5],  // 玩家物品栏  (Option<GameObjType>, 物品数量)
     pub player_bar_select_index: usize,  // 玩家当前手持物品在物品栏的索引
 }

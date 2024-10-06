@@ -72,7 +72,6 @@ fn setup(
             Some(game_obj_type) => {
                 match game_obj_type.clone() {
                     GameObjType::Cube(cube) => {
-                        println!("{}", num.to_string());
                         commands.spawn(SpriteBundle {
                             texture: asset_server.load(get_cube_model(&cube)),
                             transform: Transform::from_xyz((50*((i as isize)-2)) as f32, sprite_position_y, 9.0),
@@ -184,7 +183,9 @@ fn update_background(
 fn change_select(
     mut mouse_scroll: EventReader<MouseWheel>,
     mut player_info: ResMut<PlayerInfo>,
+    keys: Res<ButtonInput<KeyCode>>,
 ) {
+    // 滚轮切换
     for ev in mouse_scroll.read() {
         match ev.unit {
             MouseScrollUnit::Line => {
@@ -200,5 +201,17 @@ fn change_select(
             }
             MouseScrollUnit::Pixel => {}
         }
+    }
+    // 键盘切换
+    if keys.just_pressed(KeyCode::Digit1) {
+        player_info.player_bar_select_index = 0;
+    } else if keys.just_pressed(KeyCode::Digit2) {
+        player_info.player_bar_select_index = 1;
+    } else if keys.just_pressed(KeyCode::Digit3) {
+        player_info.player_bar_select_index = 2;
+    } else if keys.just_pressed(KeyCode::Digit4) {
+        player_info.player_bar_select_index = 3;
+    } else if keys.just_pressed(KeyCode::Digit5) {
+        player_info.player_bar_select_index = 4;
     }
 }

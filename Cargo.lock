@@ -3330,6 +3330,8 @@ version = "0.3.1"
 dependencies = [
  "bevy",
  "bevy_rapier2d",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

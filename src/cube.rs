@@ -42,50 +42,6 @@ impl Plugin for CubePlugin {
     }
 }
 
-// // 初始方块生成
-// fn spawn_cube_start(
-//     mut commands:Commands,
-//     assets_server: Res<AssetServer>,
-//     mut player_info: ResMut<PlayerInfo>
-// ) {
-//     let mut y_hash_map = HashMap::new();  // map_hashmap的第二级哈希表
-//     y_hash_map.insert(-2, Cube::GrassCube);
-//     player_info.player_map.insert(0, y_hash_map);
-
-//     // 生成方块
-//     commands
-//         .spawn(CubeBundle{
-//             cube_type: Cube::GrassCube,
-//             model: SpriteBundle{  // 模型
-//                 texture: assets_server.load("cube/grass.png"),
-//                 sprite: Sprite {
-//                     custom_size: Some(Vec2::new(100., 100.)),
-//                     ..Default::default()
-//                 },
-//                 transform: Transform {
-//                     translation: Vec3::new(0., 0., 0.),
-//                     ..Default::default()
-//                 },
-//                 ..Default::default()
-//             }
-//         })  // 创建方块
-//         // 物理引擎
-//         .insert(PhysicsBundle{
-//             body: RigidBody::KinematicPositionBased,
-//             velocity: Velocity {
-//                 linvel: Vec2::new(0., 0.),
-//                 angvel: 0.2,
-//             },
-//             gravity_scale: GravityScale(GRAVITY),
-//             sleeping: Sleeping::disabled(),
-//             ccd: Ccd::enabled(),
-//             mass: AdditionalMassProperties::Mass(1.0),
-//             locked_axes: LockedAxes::ROTATION_LOCKED,
-//             collider: Collider::cuboid(50., 50.),
-//         })
-//     ;
-// }
-
 // 根据玩家位置在玩家地图中注册方块
 fn reg_cube(
     time: Res<Time>,
@@ -138,7 +94,7 @@ fn spawn_cube(
                                 s.contains_key(&y)
                             }
                             None => {
-                                error!("出现错误\ncube.rs引起, 位于fn spawn_cube中\n一个完全意外的错误!!!");
+                                error!("[cube.rs/spawn_cube]error: Unexpected error");
                                 false
                             }
                         } {
@@ -148,13 +104,13 @@ fn spawn_cube(
                                     match ys.get(&y).cloned() {
                                         Some(cu) => cu,
                                         None => {
-                                            error!("出现错误\ncube.rs引起, 位于fn spawn_cube中\n一个完全意外的错误!!!\n已默认使用草方块代替");
+                                            error!("[cube.rs/spawn_cube]error: Unexpected error");
                                             Cube::GrassCube
                                         }
                                     }
                                 }
                                 None => {
-                                    error!("出现错误\ncube.rs引起, 位于fn spawn_cube中\n一个完全意外的错误!!!\n已默认使用草方块代替");
+                                    error!("[cube.rs/spawn_cube]error: Unexpected error");
                                     Cube::GrassCube
                                 }
                             };
@@ -183,7 +139,7 @@ fn spawn_cube(
                                 })
                                 .insert(GravityScale(GRAVITY))
                                 .insert(Sleeping::disabled())
-                                .insert(Ccd::enabled())
+                                .insert(Ccd::disabled())
                                 .insert(AdditionalMassProperties::Mass(1.0))
                                 .insert(Collider::cuboid(50., 50.))
                             ;
@@ -223,8 +179,8 @@ fn player_cube(
     if player_info.is_controlling{
         // 删除方块
         if buttons.pressed(MouseButton::Left) {
-            let cursor_pos: (f32, f32) = ((cursor_sprite_query.get_single().unwrap().translation.x/100.).round(),
-                (cursor_sprite_query.get_single().unwrap().translation.y/100.).round());
+            let cursor_pos: (f32, f32) = ((cursor_sprite_query.get_single().expect("[cube.rs/player_cube]panic: Unexpected error! Unable to obtain mouse position!").translation.x/100.).round(),
+                (cursor_sprite_query.get_single().expect("[cube.rs/player_cube]panic: Unexpected error! Unable to obtain mouse position! ").translation.y/100.).round());
 
             // 检查是否存在x坐标
             if player_info.player_map.contains_key(&(cursor_pos.0 as i32)) {
@@ -236,19 +192,19 @@ fn player_cube(
                             for (entity, cube_transform) in cube_query.iter() {
                                 if cube_transform.translation.x == cursor_pos.0 * 100. && cube_transform.translation.y == cursor_pos.1 * 100. {
                                     commands.entity(entity).despawn();
-                                    player_info.player_map.get_mut(&(cursor_pos.0 as i32)).unwrap().remove(&(cursor_pos.1 as i32));
+                                    player_info.player_map.get_mut(&(cursor_pos.0 as i32)).expect("[cube.rs/player_cube]panic: Unexpected error! Unable to delete the specified cube!").remove(&(cursor_pos.1 as i32));
                                 }
                             }
                         }
                     }
                     None => {
-                        error!("出现错误\n由player.rs引起, 位于fn player_cube\n一个完全意外的错误!!!")
+                        error!("[cube.rs/player_cube]error: Unexpected error")
                     }
                 }
             }
         } else if buttons.pressed(MouseButton::Right) {  // 放置方块
-            let cursor_pos: (f32, f32) = ((cursor_sprite_query.get_single().unwrap().translation.x/100.).round(),
-                (cursor_sprite_query.get_single().unwrap().translation.y/100.).round());
+            let cursor_pos: (f32, f32) = ((cursor_sprite_query.get_single().expect("[cube.rs/player_cube]panic: Unexpected error! Unable to obtain mouse position! ").translation.x/100.).round(),
+                (cursor_sprite_query.get_single().expect("[cube.rs/player_cube]panic: Unexpected error! Unable to obtain mouse position! ").translation.y/100.).round());
 
             // 获取y字典
             let mut map_y = match player_info.player_map.get_mut(&(cursor_pos.0 as i32)) {

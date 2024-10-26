@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
+
 // 物理引擎
 // 重力常量
 pub const GRAVITY: f32 = 1.;  // 重力
@@ -37,6 +39,34 @@ impl Clone for GameObjType {
         }
     }
 }
+// 在读取存档时通过由id获取obj
+pub fn new_game_obj(game_obj_id: &str) -> Option<GameObjType> {
+    match game_obj_id {
+        "GrassCube" => Option::Some(GameObjType::Cube(Cube::GrassCube)),
+        "SoilCube" => Option::Some(GameObjType::Cube(Cube::SoilCube)),
+        "StoneCube" => Option::Some(GameObjType::Cube(Cube::StoneCube)),
+        "Plank" => Option::Some(GameObjType::Cube(Cube::Plank)),
+        "StoneBrick" => Option::Some(GameObjType::Cube(Cube::StoneBrick)),
+        "None" => Option::None,
+        _ => panic!("Invalid cube type"),
+    }
+}
+// 由obj获取id
+pub fn get_game_id(game_obj: GameObjType) -> String {
+    match game_obj {
+        GameObjType::Cube(cube_type) => {
+            match cube_type {
+                Cube::GrassCube => "GrassCube".to_string(),
+                Cube::SoilCube => "SoilCube".to_string(),
+                Cube::StoneCube => "StoneCube".to_string(),
+                Cube::Plank => "Plank".to_string(),
+                Cube::StoneBrick => "StoneBrick".to_string(),
+            }
+        }
+        _ => {panic!("出现错误, 位于get_game_id中, 无法正确获取id")}
+        
+    }
+}
 
 // 玩家速度
 // 玩家速度常量
@@ -51,6 +81,8 @@ pub struct PlayerInfo {
     pub is_creative_mode: bool,  // 是否处于创造模式
     pub player_bar: [(Option<GameObjType>, isize); 5],  // 玩家物品栏  (Option<GameObjType>, 物品数量)
     pub player_bar_select_index: usize,  // 玩家当前手持物品在物品栏的索引
+    pub game_save: String,  // 游戏存档地址
+    pub player_init_pos: (f32, f32),  // 玩家初始位置
 }
 
 // 组件
@@ -134,4 +166,27 @@ pub struct BarIconCom{
 #[derive(Component)]
 pub struct BarTextCom{
     pub bar_index: usize,  // 位于物品栏中的索引
+}
+
+// 游戏保存相关
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SavedGamePlayerBar {
+    pub player_bar_items: [String; 5],  // 玩家物品栏物品，index为物品栏index
+    pub player_bar_items_count: [i32; 5],  // 物品数量
+    pub player_bar_select_index: usize,  // 玩家当前手持物品在物品栏的索引
+}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SavedGameMap {
+    pub cube_pos: Vec<[i32; 2]>,  // 储存方块的方块在地图中的位置
+    pub cube_type: Vec<String>,  // 与game_pos index对应，位置的方块类型
+}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SavedGamePlayerInfo {
+    pub player_pos: [f32; 2],
+}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SavedGameData {
+    pub player_bar: SavedGamePlayerBar,
+    pub player_info: SavedGamePlayerInfo,
+    pub player_map: SavedGameMap,
 }

@@ -4,8 +4,6 @@ use bevy_rapier2d::prelude::*;
 
 use super::basic::*;
 
-const STARTING_PLAYER_POS: Vec2 = Vec2::new(1., 400.);
-
 
 #[derive(Bundle)]
 struct PlayerBundle {
@@ -23,7 +21,7 @@ impl Plugin for PlayerPlugin {
 }
 
 // 创建玩家
-fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>) {
+fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>, player_info: ResMut<PlayerInfo>) {
     commands
         // 添加玩家
         .spawn(PlayerBundle{
@@ -42,7 +40,7 @@ fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>) {
                     ..Default::default()
                 },
                 transform: Transform {
-                    translation: Vec3::new(STARTING_PLAYER_POS.x, STARTING_PLAYER_POS.y, 0.),
+                    translation: Vec3::new(player_info.player_init_pos.0, player_info.player_init_pos.1+10., 0.),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -57,7 +55,7 @@ fn spawn_player(mut commands: Commands, assets_server: Res<AssetServer>) {
             },
             gravity_scale: GravityScale(GRAVITY),
             sleeping: Sleeping::disabled(),
-            ccd: Ccd::enabled(),
+            ccd: Ccd::disabled(),
             mass: AdditionalMassProperties::Mass(1.0),
             locked_axes: LockedAxes::ROTATION_LOCKED,
             collider: Collider::cuboid(40., 40.),
@@ -103,7 +101,7 @@ fn move_player(
                             }
                         }
                         _  => {
-                            error!("出现错误\n由player.rs引起, 位于fn move_player -> jump_check中\n一个完全意外的错误!!!")
+                            println!("[player.rs/move_player]error: Unexpected error")
                         }
                     }
 

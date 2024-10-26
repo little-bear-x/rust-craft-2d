@@ -9,6 +9,9 @@ edition = "2021"
 # bevy = { version = "0.14.2", features = ["dynamic_linking"] }
 bevy = "0.14.2"
 bevy_rapier2d = "*"  # 适用于此游戏引擎的物理引擎
+# json解析
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 # clap = "4.5.19"
 
 # Enable a small amount of optimization in the dev profile.

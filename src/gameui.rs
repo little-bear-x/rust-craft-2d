@@ -18,7 +18,7 @@ fn setup(
     window_query: Query<&Window, With<PrimaryWindow>>,
     mut player_info: ResMut<PlayerInfo>,
 ) {
-    let primary_window = window_query.get_single().unwrap();
+    let primary_window = window_query.get_single().expect("[gameui.rs/setup]panic: Can not find primary window!");
     let window_width = primary_window.width();
     let window_height = primary_window.height();
     
@@ -47,13 +47,13 @@ fn setup(
         })
         .insert(BarCom);
     }
-    player_info.player_bar = [
-        (Some(GameObjType::Cube(Cube::Plank)), if player_info.is_creative_mode { -1 } else { 64 }),
-        (Some(GameObjType::Cube(Cube::GrassCube)), if player_info.is_creative_mode { -1 } else { 64 }),
-        (Some(GameObjType::Cube(Cube::SoilCube)), if player_info.is_creative_mode { -1 } else { 64 }),
-        (Some(GameObjType::Cube(Cube::StoneCube)), if player_info.is_creative_mode { -1 } else { 64 }),
-        (Some(GameObjType::Cube(Cube::StoneBrick)), if player_info.is_creative_mode { -1 } else { 64 })
-    ];
+    // player_info.player_bar = [
+    //     (Some(GameObjType::Cube(Cube::Plank)), if player_info.is_creative_mode { -1 } else { 64 }),
+    //     (Some(GameObjType::Cube(Cube::GrassCube)), if player_info.is_creative_mode { -1 } else { 64 }),
+    //     (Some(GameObjType::Cube(Cube::SoilCube)), if player_info.is_creative_mode { -1 } else { 64 }),
+    //     (Some(GameObjType::Cube(Cube::StoneCube)), if player_info.is_creative_mode { -1 } else { 64 }),
+    //     (Some(GameObjType::Cube(Cube::StoneBrick)), if player_info.is_creative_mode { -1 } else { 64 })
+    // ];
     // 初始化物品栏选中
     commands.spawn(SpriteBundle {
         texture: asset_server.load("other/item_choose.png"),
@@ -126,10 +126,16 @@ fn update_bar(
     camera_query: Query<&Transform, (Without<BarIconCom>, With<CameraCom>, Without<BarCom>, Without<BarSelectorCom>)>,
     player_info: Res<PlayerInfo>
 ) {
-    let camera = camera_query.get_single().unwrap().translation;
+    let camera = camera_query.get_single().expect("[gameui.rs/update_bar]panic: Failed to obtain camera position!").translation;
 
     // 更新物品栏位置
-    let primary_window = window_query.get_single().unwrap();
+    let primary_window = match window_query.get_single() {
+        Ok(window) => window,
+        Err(_) => {
+            println!("[gameui.rs/update_bar]Warn: Can not find primary window!");
+            return;
+        },
+    };
     let window_height = primary_window.height();
     let sprite_position_y = -window_height / 2.0+50.;
     for (i, mut bar_transform) in bar_query.iter_mut().enumerate() {
@@ -138,7 +144,7 @@ fn update_bar(
     }
 
     // 更新物品栏选中器位置
-    let mut bar_selector_translation = bar_selector_query.get_single_mut().unwrap();
+    let mut bar_selector_translation = bar_selector_query.get_single_mut().expect("[gameui.rs/update_bar]panic: Unexpected error! Could not find bar selector transform!");
     bar_selector_translation.translation.x = camera.x+(50*((player_info.player_bar_select_index as isize)-2)) as f32;
     bar_selector_translation.translation.y = camera.y + sprite_position_y;
 
@@ -167,11 +173,11 @@ fn update_background(
     camera_query: Query<&Transform, (Without<Background>, With<CameraCom>)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let primary_window = window_query.get_single().unwrap();
+    let primary_window = window_query.get_single().expect("[gameui.rs/update_background]panic: Can not find primary window!");
     let window_width = primary_window.width();
     let window_height = primary_window.height();
-    let camera = camera_query.get_single().unwrap().translation;
-    let (mut background_transform, mut background_sprite) = background_query.get_single_mut().unwrap();
+    let camera = camera_query.get_single().expect("[gameui.rs/update_background]panic: Failed to obtain camera position!").translation;
+    let (mut background_transform, mut background_sprite) = background_query.get_single_mut().expect("[gameui.rs/update_background]panic: Unexpected error! Could not find background transform!");
     background_transform.translation.x = camera.x;
     background_transform.translation.y = camera.y;
 

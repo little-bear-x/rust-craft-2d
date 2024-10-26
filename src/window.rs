@@ -1,4 +1,4 @@
-use bevy::{input::mouse::MouseMotion, prelude::*, window::CursorGrabMode};
+use bevy::{input::mouse::MouseMotion, prelude::*, window::{CursorGrabMode, WindowMode, PresentMode}};
 use super::basic::*;
 
 const CUSTOM_CURSOR_SIZE: f32 = 30.0;
@@ -20,11 +20,13 @@ fn setup_window(
     assets_server: Res<AssetServer>,
 ) {
     let mut window = window.single_mut();
+    window.mode = WindowMode::Fullscreen;
     window.cursor.visible = false;
     // window.resizable = false;
     window.cursor.grab_mode = CursorGrabMode::Locked;
     // window.mode = WindowMode::Fullscreen;
     window.title = "rust craft 2d".to_string();
+    window.present_mode = PresentMode::AutoVsync;  // 开启垂直同步
     // 创建鼠标初始位置
     commands.spawn(SpriteBundle {
         texture: assets_server.load("cursor.png"),

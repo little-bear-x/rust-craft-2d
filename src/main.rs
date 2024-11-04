@@ -34,7 +34,11 @@ fn main(){
 
     let args: Vec<String> = env::args().collect();
     for i in 1..args.len() {
-        println!("[main.rs/main]info: Starting...received: {}", args[i]);
+        // version
+        if args[i] == "--version" {
+            println!("rust-craft-2d 0.3.3 (demo)");
+            return;
+        }
         // 是否开启创造模式
         if args[i] == "--gametype" {
             if args[i+1] == "sandbox" { 
@@ -74,7 +78,7 @@ fn main(){
             let mut file = std::fs::File::open("./SavedGames/".to_string() + &file_name + ".game").expect("[main.rs/main]panic: Failed to open archive file!");
             let mut contents = String::new();
             file.read_to_string(&mut contents).expect("[main.rs/main]panic: Failed to read archive file!");
-        
+
             let saved_game_data: SavedGameData = serde_json::from_str(&contents)
                 .expect("[main.rs/main]panic: Unable to parse archive to JSON, please check if the archive is damaged or if the game version matches the archive!");
             // println!("{:#?}", saved_game_data);
@@ -129,7 +133,9 @@ fn main(){
             player_init_pos = (saved_game_data.player_info.player_pos[0], saved_game_data.player_info.player_pos[1]);
         }
     }
-    
+    println!("[main.rs/main]info: Starting...");
+
+
     // 构建app
     let mut app = App::new();
     app.insert_resource(PlayerInfo{

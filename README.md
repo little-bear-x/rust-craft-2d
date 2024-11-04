@@ -53,20 +53,25 @@ pyinstaller -F -w main.py
 
 # 重要更新内容
 
+## 0.3.3 更新内容
+1. [新增]添加`--version` 命令可以查看游戏版本
+2. [新增]启动器新增游戏版本检查
+3. [修复]修复物品栏物品个数渲染问题
+
 ## 0.3.2更新内容
 
 1. [新增][重要]完成游戏保存与读取功能，请使用下列命令创建/读取游戏。
-   
+
    ```bash
    /path/to/game --new game-name  # 新建游戏，务必添加--gamemode参数
    /path/to/game --open game-name  # 读取游戏
    ```
-   
+
    注意：
 - 建议使用启动器启动，以免出现意外错误
 - 游戏存档为json格式，但不建议修改游戏存档，避免存档损坏
 2. [更新][重要]使用`--gametype`代替`--creative`你可以使用如下命令（如果你不使用启动器）来启动游戏：
-   
+
    ```bash
    /path/to/game --gametype sandbox  # 启动沙盒模式
    /path/to/game --gametype survival  # 启动有限方块模式
@@ -74,10 +79,6 @@ pyinstaller -F -w main.py
 3. [更新]完善了游戏日志输出
 4. [更新]游戏启动器使用python重写
 5. [修复]修复了游戏关闭时的panic
-   
-   ## 0.3.0更新内容
-6. 新增了启动器
-7. 可通过键盘切换手持物品
 
 # 未来更新
 

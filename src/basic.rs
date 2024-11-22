@@ -76,6 +76,7 @@ pub const SQUATTING_SPEED_INCREASES_MULT: f32 = 0.5;  // 蹲下速度增加倍�
 #[derive(Resource)]
 pub struct PlayerInfo {
     pub player_map: HashMap<i32, HashMap<i32, Cube>>,  // 玩家地图哈希表
+    pub player_map_seed: i32,  // 地图种子
     pub is_controlling: bool,  // 玩家是否处于控制状态（是否没有呼出鼠标）
     pub is_paused: bool,  // 游戏是否处于暂停状态
     pub is_creative_mode: bool,  // 是否处于创造模式
@@ -181,6 +182,11 @@ pub struct SavedGameMap {
     pub cube_type: Vec<String>,  // 与game_pos index对应，位置的方块类型
 }
 #[derive(Debug, Deserialize, Serialize)]
+pub struct SavedGameMapPoint {
+    pub point_index: Vec<i32>,  // 地图格点索引
+    pub point_high: Vec<i32>,  // 地图格点的高度
+}
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SavedGamePlayerInfo {
     pub player_pos: [f32; 2],
 }
@@ -189,4 +195,5 @@ pub struct SavedGameData {
     pub player_bar: SavedGamePlayerBar,
     pub player_info: SavedGamePlayerInfo,
     pub player_map: SavedGameMap,
+    pub player_map_seed: i32,
 }

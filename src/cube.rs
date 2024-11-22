@@ -1,13 +1,22 @@
 use std::collections::HashMap;
-
 // 方块文件，用于处理方块逻辑
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+
 use super::basic::*;
 
-const LOAD_MAP_SIZE: i32 = 10;  // 地图注册大小，在调试时默认为4
+use noise::{NoiseFn, Perlin};
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
+
+
+static PERLIN: Lazy<Mutex<Perlin>> = Lazy::new(|| {
+    Mutex::new(Perlin::new(0))
+});
+
 const SPAWN_MAP_SIZE: i32 = 8;  // 地图渲染大小，调试时默认为3
+pub const LOAD_MAP_SIZE: i32 = 12;
 const LOAD_MAT_TIME: f32 = 0.1;  // 地图加载检测时间，默认1
 
 #[derive(Resource)]
@@ -38,11 +47,43 @@ impl Plugin for CubePlugin {
             .add_systems(Update, remove_cube)
             .add_systems(Update, spawn_cube.after(remove_cube))
             .add_systems(Update, player_cube)
+            .add_systems(Startup, init_perlin)
         ;
     }
 }
 
-// 根据玩家位置在玩家地图中注册方块
+fn init_perlin(player_info: ResMut<PlayerInfo>) {
+    let seed = if player_info.player_map_seed < 0 {
+        0
+    } else {
+        player_info.player_map_seed as u32
+    };
+    println!("[cube.rs/init_perlin]info: Seed: {}", seed);
+    *PERLIN.lock().expect("[cube.rs/init_perlin]panic: Cannot lock perlin mutex") = Perlin::new(seed);
+}
+
+
+fn generate_noise(x: f64, octaves: usize, persistence: f64, lacunarity: f64) -> i32 {
+    let mut total = 0.0;
+    let mut max_value = 0.0; // 用于归一化
+    let mut frequency = 1.0;
+    let mut amplitude = 1.0;
+
+    for _ in 0..octaves {
+        let x_scaled = x * frequency;
+        let perlin = PERLIN.lock().expect("[cube.rs/generate_noise]panic: Cannot lock perlin mutex");
+        total += perlin.get([x_scaled, 0.0]) * amplitude;
+        max_value += amplitude;
+        frequency *= lacunarity;
+        amplitude *= persistence;
+    }
+
+    // 归一化并缩放
+    let normalized = total / max_value;
+    (normalized * 30.0).round() as i32
+}
+
+// 根据玩家位置在玩家地图中注册方块, 与地形生成算法（value noise）
 fn reg_cube(
     time: Res<Time>,
     mut timer: ResMut<RegCubeCheck>,
@@ -52,18 +93,43 @@ fn reg_cube(
     // assets_server: Res<AssetServer>,
 ) {
     if timer.0.tick(time.delta()).just_finished() {
-        for player in player_query.iter_mut(){
-            for i in -LOAD_MAP_SIZE..LOAD_MAP_SIZE + 1 {
-                if ! player_info.player_map.contains_key(&(((player.translation.x/100.0).round()) as i32 + i)) {
-                    // 设置玩家地图
-                    // player_map的第二级哈希表
-                    let mut y_hash_map: HashMap<i32, Cube> = HashMap::new(); 
-                    for j in -63..-1{
-                        y_hash_map.insert(j, Cube::StoneCube);
+        if player_info.player_map_seed < 0 {  // 超平坦地形生成
+            for player in player_query.iter_mut(){
+                for i in -LOAD_MAP_SIZE..LOAD_MAP_SIZE + 1 {
+                    if ! player_info.player_map.contains_key(&(((player.translation.x/100.0).round()) as i32 + i)) {
+                        // 设置玩家地图
+                        // player_map的第二级哈希表
+                        let mut y_hash_map: HashMap<i32, Cube> = HashMap::new(); 
+                        for j in -63..-3{
+                            y_hash_map.insert(j, Cube::StoneCube);
+                        }
+                        for j in -3..0 {
+
+                        y_hash_map.insert(j, Cube::SoilCube);
+                        }
+                        y_hash_map.insert(0, Cube::GrassCube);
+                        player_info.player_map.insert(((player.translation.x/100.0).round()) as i32 + i, y_hash_map);
                     }
-                    y_hash_map.insert(-1, Cube::SoilCube);
-                    y_hash_map.insert(0, Cube::GrassCube);
-                    player_info.player_map.insert(((player.translation.x/100.0).round()) as i32 + i, y_hash_map);
+                }
+            }
+        } else {
+            for player in player_query.iter_mut(){
+                for i in -LOAD_MAP_SIZE..LOAD_MAP_SIZE + 1 {
+                    let x = ((player.translation.x / 100.0).round() as i32) + i;
+                    if ! player_info.player_map.contains_key(&x) {
+                        let y = generate_noise((x as f64)/100., 4, 0.5, 2.0);
+                        // 设置玩家地图
+                        // player_map的第二级哈希表
+                        let mut y_hash_map: HashMap<i32, Cube> = HashMap::new(); 
+                        for j in -63..y-3{
+                            y_hash_map.insert(j, Cube::StoneCube);
+                        }
+                        for j in y-3..y {
+                            y_hash_map.insert(j, Cube::SoilCube);
+                        }
+                        y_hash_map.insert(y, Cube::GrassCube);
+                        player_info.player_map.insert(((player.translation.x/100.0).round()) as i32 + i, y_hash_map);
+                    }
                 }
             }
         }

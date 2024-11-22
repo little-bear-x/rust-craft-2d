@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+
 pub mod player;
 pub mod camera;
 pub mod cube;
@@ -30,6 +31,7 @@ fn main(){
     let mut player_bar_select_index: usize = 0;  // 玩家当前手持物品在物品栏的索引
     let mut game_save: String = "default".to_string();  // 游戏存档
     let mut player_map: HashMap<i32, HashMap<i32, Cube>> = HashMap::new();  // 游戏地图
+    let mut player_map_seed: i32 = -1;
     let mut player_init_pos: (f32, f32) = (0., 1.);  // 玩家位置
 
     let args: Vec<String> = env::args().collect();
@@ -39,7 +41,7 @@ fn main(){
             println!("rust-craft-2d 0.3.3 (demo)");
             return;
         }
-        // 是否开启创造模式
+        // 是否开启创造模式(仅创建新文件时有效)
         if args[i] == "--gametype" {
             if args[i+1] == "sandbox" { 
                 is_creative_mode = true;
@@ -58,6 +60,11 @@ fn main(){
                 (Some(GameObjType::Cube(Cube::StoneCube)), if is_creative_mode { -1 } else { 64 }),
                 (Some(GameObjType::Cube(Cube::StoneBrick)), if is_creative_mode { -1 } else { 64 })
             ];
+        }
+
+        // 地图种子（仅创建新文件时有效）
+        if args[i] == "--seed" {
+            player_map_seed = args[i+1].parse::<i32>().expect("[main.rs/main]error: Invalid seed! Please input an i32!");
         }
 
         // 创建新的文件
@@ -131,6 +138,8 @@ fn main(){
             }
             // 玩家位置
             player_init_pos = (saved_game_data.player_info.player_pos[0], saved_game_data.player_info.player_pos[1]);
+            // 玩家地图种子
+            player_map_seed = saved_game_data.player_map_seed;
         }
     }
     println!("[main.rs/main]info: Starting...");
@@ -140,6 +149,7 @@ fn main(){
     let mut app = App::new();
     app.insert_resource(PlayerInfo{
         player_map,
+        player_map_seed: player_map_seed,
         is_controlling: true,
         is_paused: false,
         is_creative_mode,
@@ -183,6 +193,8 @@ pub fn exit_on_all_closed(windows: Query<&Window>, player_info: ResMut<PlayerInf
             cube_pos,
             cube_type,
         };
+        // 保存玩家地图种子
+        let saved_game_player_map_seed = player_info.player_map_seed;
         // 保存玩家物品栏
         let mut player_bar_items: [String; 5] = from_fn(|_| (String::from("None")));
         let mut player_bar_items_count: [i32; 5] = [0; 5];
@@ -211,6 +223,7 @@ pub fn exit_on_all_closed(windows: Query<&Window>, player_info: ResMut<PlayerInf
             player_bar: saved_game_player_bar,
             player_map: saved_game_map,
             player_info: saved_game_player_info,
+            player_map_seed: saved_game_player_map_seed,
         };
         let json = serde_json::to_string(&saved_game_data).expect("[main.rs/exit_on_all_closed]panic: error occurred while saving the game. Game save failed!");
         // println!("{:#?}", json);

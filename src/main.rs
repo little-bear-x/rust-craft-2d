@@ -38,7 +38,7 @@ fn main(){
     for i in 1..args.len() {
         // version
         if args[i] == "--version" {
-            println!("rust-craft-2d 0.3.3 (demo)");
+            println!("rust-craft-2d 0.4.0 (demo)");
             return;
         }
         // 是否开启创造模式(仅创建新文件时有效)

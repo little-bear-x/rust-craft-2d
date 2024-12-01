@@ -54,11 +54,12 @@ impl Plugin for CubePlugin {
 
 fn init_perlin(player_info: ResMut<PlayerInfo>) {
     let seed = if player_info.player_map_seed < 0 {
+        println!("[cube.rs/init_perlin]info: Seed: {}", -1);
         0
     } else {
+        println!("[cube.rs/init_perlin]info: Seed: {}", player_info.player_map_seed);
         player_info.player_map_seed as u32
     };
-    println!("[cube.rs/init_perlin]info: Seed: {}", seed);
     *PERLIN.lock().expect("[cube.rs/init_perlin]panic: Cannot lock perlin mutex") = Perlin::new(seed);
 }
 

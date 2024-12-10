@@ -149,7 +149,7 @@ fn main(){
     let mut app = App::new();
     app.insert_resource(PlayerInfo{
         player_map,
-        player_map_seed: player_map_seed,
+        player_map_seed,
         is_controlling: true,
         is_paused: false,
         is_creative_mode,

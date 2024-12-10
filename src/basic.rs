@@ -23,7 +23,7 @@ pub struct PhysicsBundle {
 
 // 游戏逻辑
 // 物体类型
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub enum GameObjType {
     Player,  // 玩家
     Creature,  // 生物

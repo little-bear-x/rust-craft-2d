@@ -61,14 +61,6 @@ fn setup(
             })
             .insert(BarCom);
     }
-    // player_info.player_bar = [
-    //     (Some(GameObjType::Cube(Cube::Plank)), if player_info.is_creative_mode { -1 } else { 64 }),
-    //     (Some(GameObjType::Cube(Cube::GrassCube)), if player_info.is_creative_mode { -1 } else { 64 }),
-    //     (Some(GameObjType::Cube(Cube::SoilCube)), if player_info.is_creative_mode { -1 } else { 64 }),
-    //     (Some(GameObjType::Cube(Cube::StoneCube)), if player_info.is_creative_mode { -1 } else { 64 }),
-    //     (Some(GameObjType::Cube(Cube::StoneBrick)), if player_info.is_creative_mode { -1 } else { 64 })
-    // ];
-    // 初始化物品栏选中
     commands
         .spawn(SpriteBundle {
             texture: asset_server.load("other/item_choose.png"),
@@ -142,6 +134,7 @@ fn setup(
 // 更新bar
 fn update_bar(
     mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut bar_query: Query<
         &mut Transform,
         (
@@ -161,7 +154,7 @@ fn update_bar(
         ),
     >,
     mut bar_icon_query: Query<
-        (&mut Transform, &BarIconCom, Entity),
+        Entity,
         (
             With<BarIconCom>,
             Without<CameraCom>,
@@ -169,7 +162,7 @@ fn update_bar(
             Without<BarCom>,
         ),
     >,
-    mut bar_text_query: Query<(&mut Text, &BarTextCom, Entity), With<BarTextCom>>,
+    mut bar_text_query: Query<Entity, With<BarTextCom>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     camera_query: Query<
         &Transform,
@@ -211,21 +204,77 @@ fn update_bar(
     bar_selector_translation.translation.y = camera.y + sprite_position_y;
 
     // 更新物品栏图标位置
-    for (mut bar_transform, i, entity) in bar_icon_query.iter_mut() {
+    for entity in bar_icon_query.iter_mut() {
         // 如果方块数量为0，则删除该图标
-        if player_info.player_bar[i.bar_index].1 == 0 {
-            commands.entity(entity).despawn();
-        }
-        bar_transform.translation.x = camera.x + (50 * ((i.bar_index as isize) - 2)) as f32;
-        bar_transform.translation.y = camera.y + sprite_position_y;
+        // if player_info.player_bar[i.bar_index].1 == 0 {
+        commands.entity(entity).despawn();
+        // }
+        // bar_transform.translation.x = camera.x + (50 * ((i.bar_index as isize) - 2)) as f32;
+        // bar_transform.translation.y = camera.y + sprite_position_y;
     }
 
     // 更新物品栏文字
-    for (mut text, i, entity) in bar_text_query.iter_mut() {
-        if player_info.player_bar[i.bar_index].1 == 0 {
-            commands.entity(entity).despawn();
+    for entity in bar_text_query.iter_mut() {
+        // if player_info.player_bar[i.bar_index].1 == 0 {
+        commands.entity(entity).despawn();
+        // }
+        // text.sections[0].value = player_info.player_bar[i.bar_index].1.to_string();
+    }
+
+    // 渲染物品栏上的图标与数量
+    for (i, (bar_icon, num)) in player_info.player_bar.iter().enumerate() {
+        match bar_icon {
+            Some(game_obj_type) => {
+                match game_obj_type.clone() {
+                    GameObjType::Cube(cube) => {
+                        commands
+                            .spawn(SpriteBundle {
+                                texture: asset_server.load(get_cube_model(&cube)),
+                                transform: Transform::from_xyz(
+                                    camera.x + (50 * ((i as isize) - 2)) as f32,
+                                    camera.y + sprite_position_y,
+                                    9.1,
+                                ),
+                                sprite: Sprite {
+                                    custom_size: Some(Vec2::new(30., 30.)),
+                                    ..Default::default()
+                                },
+                                ..default()
+                            })
+                            .insert(BarIconCom { bar_index: i })
+                            // 渲染物品栏上物品的数量
+                            .with_children(|builder| {
+                                builder
+                                    .spawn(Text2dBundle {
+                                        text: Text {
+                                            sections: vec![TextSection::new(
+                                                num.to_string(),
+                                                TextStyle {
+                                                    font: asset_server
+                                                        .load("fonts/white-border.ttf"),
+                                                    font_size: 20.0,
+                                                    ..default()
+                                                },
+                                            )],
+                                            justify: JustifyText::Left,
+                                            ..Default::default()
+                                        },
+                                        text_2d_bounds: Text2dBounds {
+                                            // Wrap text in the rectangle
+                                            size: Vec2::new(30., 30.),
+                                        },
+                                        // ensure the text is drawn on top of the box
+                                        transform: Transform::from_xyz(0., 0., 1.),
+                                        ..default()
+                                    })
+                                    .insert(BarTextCom { bar_index: i });
+                            });
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
         }
-        text.sections[0].value = player_info.player_bar[i.bar_index].1.to_string();
     }
 }
 

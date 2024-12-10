@@ -3,52 +3,55 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-
 use super::basic::*;
 
 use noise::{NoiseFn, Perlin};
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 
+static PERLIN: Lazy<Mutex<Perlin>> = Lazy::new(|| Mutex::new(Perlin::new(0)));
 
-static PERLIN: Lazy<Mutex<Perlin>> = Lazy::new(|| {
-    Mutex::new(Perlin::new(0))
-});
-
-const SPAWN_MAP_SIZE: i32 = 8;  // 地图渲染大小，调试时默认为3
+const SPAWN_MAP_SIZE: i32 = 8; // 地图渲染大小，调试时默认为3
 pub const LOAD_MAP_SIZE: i32 = 12;
-const LOAD_MAT_TIME: f32 = 0.1;  // 地图加载检测时间，默认1
+const LOAD_MAT_TIME: f32 = 0.1; // 地图加载检测时间，默认1
 
 #[derive(Resource)]
-struct RegCubeCheck(Timer);  // 进行注册方块检测间隔计时器
+struct RegCubeCheck(Timer); // 进行注册方块检测间隔计时器
 
 #[derive(Resource)]
-struct SpawnCubeCheck(Timer);  // 进行方块绘制间隔计时器
+struct SpawnCubeCheck(Timer); // 进行方块绘制间隔计时器
 #[derive(Resource)]
-struct RemoveCubeCheck(Timer);  // 进行方块移除间隔计时器
+struct RemoveCubeCheck(Timer); // 进行方块移除间隔计时器
 
 // 方块Bundle
 #[derive(Bundle)]
 struct CubeBundle {
-    pub cube_type: Cube,  // 方块类型
-    pub model: SpriteBundle,  // 方块模型
+    pub cube_type: Cube,     // 方块类型
+    pub model: SpriteBundle, // 方块模型
 }
 
 pub struct CubePlugin;
 impl Plugin for CubePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .insert_resource(SpawnCubeCheck(Timer::from_seconds(LOAD_MAT_TIME, TimerMode::Repeating)))
-            .insert_resource(RegCubeCheck(Timer::from_seconds(LOAD_MAT_TIME, TimerMode::Repeating)))
-            .insert_resource(RemoveCubeCheck(Timer::from_seconds(LOAD_MAT_TIME, TimerMode::Repeating)))
-            // .add_systems(Startup, spawn_cube_start)
-            .add_systems(Update, reg_cube)
-            // .add_systems(Update, (remove_cube, spawn_cube))
-            .add_systems(Update, remove_cube)
-            .add_systems(Update, spawn_cube.after(remove_cube))
-            .add_systems(Update, player_cube)
-            .add_systems(Startup, init_perlin)
-        ;
+        app.insert_resource(SpawnCubeCheck(Timer::from_seconds(
+            LOAD_MAT_TIME,
+            TimerMode::Repeating,
+        )))
+        .insert_resource(RegCubeCheck(Timer::from_seconds(
+            LOAD_MAT_TIME,
+            TimerMode::Repeating,
+        )))
+        .insert_resource(RemoveCubeCheck(Timer::from_seconds(
+            LOAD_MAT_TIME,
+            TimerMode::Repeating,
+        )))
+        // .add_systems(Startup, spawn_cube_start)
+        .add_systems(Update, reg_cube)
+        // .add_systems(Update, (remove_cube, spawn_cube))
+        .add_systems(Update, remove_cube)
+        .add_systems(Update, spawn_cube.after(remove_cube))
+        .add_systems(Update, player_cube)
+        .add_systems(Startup, init_perlin);
     }
 }
 
@@ -57,12 +60,16 @@ fn init_perlin(player_info: ResMut<PlayerInfo>) {
         println!("[cube.rs/init_perlin]info: Seed: {}", -1);
         0
     } else {
-        println!("[cube.rs/init_perlin]info: Seed: {}", player_info.player_map_seed);
+        println!(
+            "[cube.rs/init_perlin]info: Seed: {}",
+            player_info.player_map_seed
+        );
         player_info.player_map_seed as u32
     };
-    *PERLIN.lock().expect("[cube.rs/init_perlin]panic: Cannot lock perlin mutex") = Perlin::new(seed);
+    *PERLIN
+        .lock()
+        .expect("[cube.rs/init_perlin]panic: Cannot lock perlin mutex") = Perlin::new(seed);
 }
-
 
 fn generate_noise(x: f64, octaves: usize, persistence: f64, lacunarity: f64) -> i32 {
     let mut total = 0.0;
@@ -72,7 +79,9 @@ fn generate_noise(x: f64, octaves: usize, persistence: f64, lacunarity: f64) -> 
 
     for _ in 0..octaves {
         let x_scaled = x * frequency;
-        let perlin = PERLIN.lock().expect("[cube.rs/generate_noise]panic: Cannot lock perlin mutex");
+        let perlin = PERLIN
+            .lock()
+            .expect("[cube.rs/generate_noise]panic: Cannot lock perlin mutex");
         total += perlin.get([x_scaled, 0.0]) * amplitude;
         max_value += amplitude;
         frequency *= lacunarity;
@@ -90,46 +99,54 @@ fn reg_cube(
     mut timer: ResMut<RegCubeCheck>,
     // mut commands:Commands,
     mut player_query: Query<&Transform, With<Player>>,
-    mut player_info: ResMut<PlayerInfo>
-    // assets_server: Res<AssetServer>,
+    mut player_info: ResMut<PlayerInfo>, // assets_server: Res<AssetServer>,
 ) {
     if timer.0.tick(time.delta()).just_finished() {
-        if player_info.player_map_seed < 0 {  // 超平坦地形生成
-            for player in player_query.iter_mut(){
+        if player_info.player_map_seed < 0 {
+            // 超平坦地形生成
+            for player in player_query.iter_mut() {
                 for i in -LOAD_MAP_SIZE..LOAD_MAP_SIZE + 1 {
-                    if ! player_info.player_map.contains_key(&(((player.translation.x/100.0).round()) as i32 + i)) {
+                    if !player_info
+                        .player_map
+                        .contains_key(&(((player.translation.x / 100.0).round()) as i32 + i))
+                    {
                         // 设置玩家地图
                         // player_map的第二级哈希表
-                        let mut y_hash_map: HashMap<i32, Cube> = HashMap::new(); 
-                        for j in -63..-3{
+                        let mut y_hash_map: HashMap<i32, Cube> = HashMap::new();
+                        for j in -63..-3 {
                             y_hash_map.insert(j, Cube::StoneCube);
                         }
                         for j in -3..0 {
-
-                        y_hash_map.insert(j, Cube::SoilCube);
+                            y_hash_map.insert(j, Cube::SoilCube);
                         }
                         y_hash_map.insert(0, Cube::GrassCube);
-                        player_info.player_map.insert(((player.translation.x/100.0).round()) as i32 + i, y_hash_map);
+                        player_info.player_map.insert(
+                            ((player.translation.x / 100.0).round()) as i32 + i,
+                            y_hash_map,
+                        );
                     }
                 }
             }
         } else {
-            for player in player_query.iter_mut(){
+            for player in player_query.iter_mut() {
                 for i in -LOAD_MAP_SIZE..LOAD_MAP_SIZE + 1 {
                     let x = ((player.translation.x / 100.0).round() as i32) + i;
-                    if ! player_info.player_map.contains_key(&x) {
-                        let y = generate_noise((x as f64)/100., 4, 0.5, 2.0);
+                    if !player_info.player_map.contains_key(&x) {
+                        let y = generate_noise((x as f64) / 100., 4, 0.5, 2.0);
                         // 设置玩家地图
                         // player_map的第二级哈希表
-                        let mut y_hash_map: HashMap<i32, Cube> = HashMap::new(); 
-                        for j in -63..y-3{
+                        let mut y_hash_map: HashMap<i32, Cube> = HashMap::new();
+                        for j in -63..y - 3 {
                             y_hash_map.insert(j, Cube::StoneCube);
                         }
-                        for j in y-3..y {
+                        for j in y - 3..y {
                             y_hash_map.insert(j, Cube::SoilCube);
                         }
                         y_hash_map.insert(y, Cube::GrassCube);
-                        player_info.player_map.insert(((player.translation.x/100.0).round()) as i32 + i, y_hash_map);
+                        player_info.player_map.insert(
+                            ((player.translation.x / 100.0).round()) as i32 + i,
+                            y_hash_map,
+                        );
                     }
                 }
             }
@@ -141,25 +158,24 @@ fn reg_cube(
 fn spawn_cube(
     time: Res<Time>,
     mut timer: ResMut<SpawnCubeCheck>,
-    mut commands:Commands,
+    mut commands: Commands,
     player_query: Query<&Transform, With<Player>>,
     assets_server: Res<AssetServer>,
-    player_info: ResMut<PlayerInfo>
+    player_info: ResMut<PlayerInfo>,
 ) {
-
     if timer.0.tick(time.delta()).just_finished() {
         for player in player_query.iter() {
-            for x in (((player.translation.x/100.0).round()) as i32) - SPAWN_MAP_SIZE
-                ..(((player.translation.x/100.0).round()) as i32) + SPAWN_MAP_SIZE+1 {
-                for y in (((player.translation.y/100.0).round()) as i32) - SPAWN_MAP_SIZE - 1
-                    ..(((player.translation.y/100.0).round()) as i32) + SPAWN_MAP_SIZE {
+            for x in (((player.translation.x / 100.0).round()) as i32) - SPAWN_MAP_SIZE
+                ..(((player.translation.x / 100.0).round()) as i32) + SPAWN_MAP_SIZE + 1
+            {
+                for y in (((player.translation.y / 100.0).round()) as i32) - SPAWN_MAP_SIZE - 1
+                    ..(((player.translation.y / 100.0).round()) as i32) + SPAWN_MAP_SIZE
+                {
                     // 判断是否存在x
                     if player_info.player_map.contains_key(&x) {
                         // 判断是否存在y
                         if match player_info.player_map.get(&x).cloned() {
-                            Some(s) => {
-                                s.contains_key(&y)
-                            }
+                            Some(s) => s.contains_key(&y),
                             None => {
                                 error!("[cube.rs/spawn_cube]error: Unexpected error");
                                 false
@@ -167,15 +183,13 @@ fn spawn_cube(
                         } {
                             // 获取cube的值
                             let cube = match player_info.player_map.get(&x).cloned() {
-                                Some(ys) => {
-                                    match ys.get(&y).cloned() {
-                                        Some(cu) => cu,
-                                        None => {
-                                            error!("[cube.rs/spawn_cube]error: Unexpected error");
-                                            Cube::GrassCube
-                                        }
+                                Some(ys) => match ys.get(&y).cloned() {
+                                    Some(cu) => cu,
+                                    None => {
+                                        error!("[cube.rs/spawn_cube]error: Unexpected error");
+                                        Cube::GrassCube
                                     }
-                                }
+                                },
                                 None => {
                                     error!("[cube.rs/spawn_cube]error: Unexpected error");
                                     Cube::GrassCube
@@ -183,20 +197,25 @@ fn spawn_cube(
                             };
                             // 绘制方块
                             commands
-                                .spawn(CubeBundle{
+                                .spawn(CubeBundle {
                                     cube_type: cube.clone(),
-                                    model: SpriteBundle{  // 模型
+                                    model: SpriteBundle {
+                                        // 模型
                                         texture: assets_server.load(get_cube_model(&cube)),
                                         sprite: Sprite {
                                             custom_size: Some(Vec2::new(100., 100.)),
                                             ..Default::default()
                                         },
                                         transform: Transform {
-                                            translation: Vec3::new((x * 100) as f32, (y * 100) as f32, 0.),
+                                            translation: Vec3::new(
+                                                (x * 100) as f32,
+                                                (y * 100) as f32,
+                                                0.,
+                                            ),
                                             ..Default::default()
                                         },
                                         ..Default::default()
-                                    }
+                                    },
                                 })
                                 // 物理引擎
                                 .insert(RigidBody::KinematicPositionBased)
@@ -208,9 +227,8 @@ fn spawn_cube(
                                 .insert(Sleeping::disabled())
                                 .insert(Ccd::disabled())
                                 .insert(AdditionalMassProperties::Mass(1.0))
-                                .insert(Collider::cuboid(50., 50.))
-                            ;
-                        }       
+                                .insert(Collider::cuboid(50., 50.));
+                        }
                     }
                 }
             }
@@ -224,11 +242,11 @@ fn remove_cube(
     mut timer: ResMut<RemoveCubeCheck>,
     mut commands: Commands,
     cube_query: Query<Entity, With<Cube>>,
-){
+) {
     if timer.0.tick(time.delta()).just_finished() {
         // info!("a");
         for entity in cube_query.iter() {
-                commands.entity(entity).despawn();
+            commands.entity(entity).despawn();
         }
     }
 }
@@ -240,36 +258,65 @@ fn player_cube(
     cursor_sprite_query: Query<&Transform, (With<CursorCom>, Without<Cube>)>,
     buttons: Res<ButtonInput<MouseButton>>,
     assets_server: Res<AssetServer>,
-    mut player_info: ResMut<PlayerInfo>
+    mut player_info: ResMut<PlayerInfo>,
 ) {
     // 确保仅在控制时候操作
-    if player_info.is_controlling{
+    if player_info.is_controlling {
         // 删除方块
         if buttons.pressed(MouseButton::Left) {
             let cursor_pos: (f32, f32) = ((cursor_sprite_query.get_single().expect("[cube.rs/player_cube]panic: Unexpected error! Unable to obtain mouse position!").translation.x/100.).round(),
                 (cursor_sprite_query.get_single().expect("[cube.rs/player_cube]panic: Unexpected error! Unable to obtain mouse position! ").translation.y/100.).round());
 
-            // 检查是否存在x坐标
-            if player_info.player_map.contains_key(&(cursor_pos.0 as i32)) {
-                match player_info.player_map.get(&(cursor_pos.0 as i32)) {
-                    Some(s) => {
-                        // 检查是否存在y坐标
-                        if s.contains_key(&(cursor_pos.1 as i32)) {
-                            // 存在则删除
-                            for (entity, cube_transform) in cube_query.iter() {
-                                if cube_transform.translation.x == cursor_pos.0 * 100. && cube_transform.translation.y == cursor_pos.1 * 100. {
-                                    commands.entity(entity).despawn();
-                                    player_info.player_map.get_mut(&(cursor_pos.0 as i32)).expect("[cube.rs/player_cube]panic: Unexpected error! Unable to delete the specified cube!").remove(&(cursor_pos.1 as i32));
+            // 检查是否存在这个方块
+            if let Some(xmap) = player_info.player_map.clone().get(&(cursor_pos.0 as i32)) {
+                if let Some(cube) = xmap.get(&(cursor_pos.1 as i32)) {
+                    for (entity, cube_transform) in cube_query.iter() {
+                        if cube_transform.translation.x == cursor_pos.0 * 100.
+                            && cube_transform.translation.y == cursor_pos.1 * 100.
+                        {
+                            // 检查玩家当前物品数量
+                            let mut obj_bar_index = -1; // 当前物品在物品栏中的索引（如果有）
+                            let mut num = 0; // 玩家当前物品数量
+                            let mut null_bar_index: i32 = -1; // 玩家的空物品栏的索引（如果有）
+                            for (i, (bar_icon, num_)) in player_info.player_bar.iter().enumerate() {
+                                if num_.clone() == 0 && null_bar_index == -1 {
+                                    // 记录首个空物品栏索引
+                                    null_bar_index = i as i32;
+                                } else if get_game_id(bar_icon.clone().unwrap())
+                                    == get_game_id(GameObjType::Cube(cube.clone()))
+                                    && (obj_bar_index == -1 || num > 64)
+                                {
+                                    num = num_.clone();
+                                    obj_bar_index = i as i32;
                                 }
+                            }
+                            // println!("{}", null_bar_index);
+                            if obj_bar_index != -1 && num < 64 {
+                                if num != -1 {
+                                    player_info.player_bar[obj_bar_index as usize].1 += 1;
+                                }
+                                // 删除
+                                commands.entity(entity).despawn();
+                                player_info.player_map.get_mut(&(cursor_pos.0 as i32))
+                                    .expect("[cube.rs/player_cube]panic: Unexpected error! Unable to delete the specified cube!")
+                                    .remove(&(cursor_pos.1 as i32));
+                            } else if null_bar_index != -1 {
+                                player_info.player_bar[null_bar_index as usize].0 = new_game_obj(&get_game_id(GameObjType::Cube(cube.clone())));
+                                player_info.player_bar[null_bar_index as usize].1 = 1;
+                                println!("{:#?}", player_info.player_bar[null_bar_index as usize].0.clone());
+                                println!("{}", get_game_id(GameObjType::Cube(cube.clone())));
+                                // 删除
+                                commands.entity(entity).despawn();
+                                player_info.player_map.get_mut(&(cursor_pos.0 as i32))
+                                    .expect("[cube.rs/player_cube]panic: Unexpected error! Unable to delete the specified cube!")
+                                    .remove(&(cursor_pos.1 as i32));
                             }
                         }
                     }
-                    None => {
-                        error!("[cube.rs/player_cube]error: Unexpected error")
-                    }
                 }
             }
-        } else if buttons.pressed(MouseButton::Right) {  // 放置方块
+        } else if buttons.pressed(MouseButton::Right) {
+            // 放置方块
             let cursor_pos: (f32, f32) = ((cursor_sprite_query.get_single().expect("[cube.rs/player_cube]panic: Unexpected error! Unable to obtain mouse position! ").translation.x/100.).round(),
                 (cursor_sprite_query.get_single().expect("[cube.rs/player_cube]panic: Unexpected error! Unable to obtain mouse position! ").translation.y/100.).round());
 
@@ -280,20 +327,21 @@ fn player_cube(
                         return;
                     }
                     s.clone()
-                },
+                }
                 None => {
                     let y_hash_map: HashMap<i32, Cube> = HashMap::new();
                     y_hash_map.clone()
-                },
+                }
             };
             // 放置方块的类型
-            let cube_type = match player_info.player_bar[player_info.player_bar_select_index].0.clone() {
-                Some(s) => {
-                    match s {
-                        GameObjType::Cube(cube) => {
-                            cube
-                        }
-                        _ => { return; }
+            let cube_type = match player_info.player_bar[player_info.player_bar_select_index]
+                .0
+                .clone()
+            {
+                Some(s) => match s {
+                    GameObjType::Cube(cube) => cube,
+                    _ => {
+                        return;
                     }
                 },
                 None => {
@@ -306,9 +354,10 @@ fn player_cube(
 
             // 在此处渲染方块
             commands
-                .spawn(CubeBundle{
+                .spawn(CubeBundle {
                     cube_type: cube_type.clone(),
-                    model: SpriteBundle{  // 模型
+                    model: SpriteBundle {
+                        // 模型
                         texture: assets_server.load(get_cube_model(&cube_type)),
                         sprite: Sprite {
                             custom_size: Some(Vec2::new(100., 100.)),
@@ -319,10 +368,10 @@ fn player_cube(
                             ..Default::default()
                         },
                         ..Default::default()
-                    }
-                })  // 创建方块
+                    },
+                }) // 创建方块
                 // 物理引擎
-                .insert(PhysicsBundle{
+                .insert(PhysicsBundle {
                     body: RigidBody::KinematicPositionBased,
                     velocity: Velocity {
                         linvel: Vec2::new(0., 0.),
@@ -334,11 +383,10 @@ fn player_cube(
                     mass: AdditionalMassProperties::Mass(1.0),
                     locked_axes: LockedAxes::ROTATION_LOCKED,
                     collider: Collider::cuboid(50., 50.),
-                })
-            ;
+                });
 
             // 修改玩家放置后方块的数量
-                let i = player_info.player_bar_select_index;
+            let i = player_info.player_bar_select_index;
             if player_info.player_bar[player_info.player_bar_select_index.clone()].1 != -1 {
                 player_info.player_bar[i].1 -= 1;
             }
